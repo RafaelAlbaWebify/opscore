@@ -17,7 +17,7 @@ def test_operator_interface(tmp_path: Path) -> None:
     assert "New incident" in response.text
     assert "Evidence inventory" in response.text
     assert "Run deterministic analysis" in response.text
-    assert 'fetch("/api/incidents")' in response.text
+    assert 'request("/api/incidents")' in response.text
 
 
 def test_health_endpoint(tmp_path: Path) -> None:
