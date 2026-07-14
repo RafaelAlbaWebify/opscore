@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Final, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from opscore.adapters.watch_run import WatchRun
 from opscore.models import EvidenceItem
 
-WATCH_HANDOFF_VERSION = "watch.opscore/v1"
+WATCH_HANDOFF_VERSION: Final = "watch.opscore/v1"
 
 
 class WatchHandoff(BaseModel):
