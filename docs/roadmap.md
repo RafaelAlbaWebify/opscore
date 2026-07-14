@@ -44,15 +44,20 @@
 - [x] Output escaping for user-controlled values.
 - [x] Path-independent Windows UI launcher.
 - [x] Playwright functional workflow and screenshot artifact.
-- [ ] Complete authoritative Linux and Windows CI proof for M3.
+- [x] Complete authoritative Linux and Windows CI proof for M3.
 
 ## M4 — Bounded live collectors
 
-- [ ] Single-target DNS evidence collection.
-- [ ] Single-target HTTP/service reachability collection.
-- [ ] TLS certificate evidence collection.
-- [ ] Explicit timeouts and source-location provenance.
-- [ ] Collector safety and network-boundary tests.
+- [x] Single-target DNS evidence collection.
+- [x] Single-target HTTP/service reachability collection.
+- [x] TLS certificate evidence collection for HTTPS targets.
+- [x] Explicit timeouts and source-location provenance.
+- [x] Collector URL and credential safety validation.
+- [x] Partial evidence for bounded collection failures.
+- [x] Incident API endpoint for explicit collection.
+- [x] One-off CLI collection and JSON export.
+- [x] Collector safety and network-boundary tests.
+- [ ] Complete authoritative Linux and Windows CI proof for M4.
 
 ## Deferred
 
