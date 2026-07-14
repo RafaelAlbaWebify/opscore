@@ -2,16 +2,28 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
+from opscore import __version__
 from opscore.api import create_app
 from opscore.demo import load_bundle
 
 SAMPLE = Path("samples/incidents/orders-service-unavailable.json")
 
 
+def test_operator_interface(tmp_path: Path) -> None:
+    response = TestClient(create_app(tmp_path)).get("/")
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/html")
+    assert "OPSCORE Operator Workbench" in response.text
+    assert "New incident" in response.text
+    assert "Evidence inventory" in response.text
+    assert "Run deterministic analysis" in response.text
+    assert 'fetch("/api/incidents")' in response.text
+
+
 def test_health_endpoint(tmp_path: Path) -> None:
     response = TestClient(create_app(tmp_path)).get("/api/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok", "service": "opscore", "version": "0.2.0"}
+    assert response.json() == {"status": "ok", "service": "opscore", "version": __version__}
 
 
 def test_incident_api_lifecycle(tmp_path: Path) -> None:
