@@ -81,7 +81,10 @@ def create_app(workspace: Path | None = None) -> FastAPI:
             raise HTTPException(status_code=404, detail="incident not found")
         service_ids = {service.service_id for service in bundle.services}
         if request.target_reference not in service_ids:
-            raise HTTPException(status_code=422, detail="target_reference is not an incident service")
+            raise HTTPException(
+                status_code=422,
+                detail="target_reference is not an incident service",
+            )
         collected = collect_target(request)
         updated = bundle.model_copy(update={"evidence": [*bundle.evidence, *collected]})
         store.save_bundle(updated)
