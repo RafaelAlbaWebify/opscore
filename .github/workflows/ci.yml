@@ -28,9 +28,15 @@ jobs:
       - name: Prepare artifacts
         run: mkdir -p artifacts
       - name: Lint
-        run: python -m ruff check . 2>&1 | tee artifacts/ruff.txt
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m ruff check . 2>&1 | tee artifacts/ruff.txt
       - name: Type check
-        run: python -m mypy src 2>&1 | tee artifacts/mypy.txt
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m mypy src 2>&1 | tee artifacts/mypy.txt
       - name: Tests
         run: python -m pytest --junitxml=artifacts/test-results.xml
       - name: Demo
@@ -87,8 +93,12 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Path artifacts -Force | Out-Null
-          if (Test-Path .opscore-data) { Copy-Item .opscore-data artifacts\demo -Recurse -Force }
-          Get-ChildItem $HOME\Downloads\OPSCORE_REVIEW_*.zip -ErrorAction SilentlyContinue | Copy-Item -Destination artifacts -Force
+          if (Test-Path .opscore-data) {
+              Copy-Item .opscore-data artifacts\demo -Recurse -Force
+          }
+          Get-ChildItem $HOME\Downloads\OPSCORE_REVIEW_*.zip `
+              -ErrorAction SilentlyContinue |
+              Copy-Item -Destination artifacts -Force
           python --version | Set-Content artifacts\python-version.txt
           python -m pip freeze | Set-Content artifacts\dependencies.txt
       - name: Upload proof
