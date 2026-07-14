@@ -1,0 +1,115 @@
+{
+  "incident": {
+    "incident_id": "inc-orders-001",
+    "title": "Orders service unavailable",
+    "reported_symptom": "Users report that the orders portal is unavailable from one location.",
+    "environment": "sample-production",
+    "reported_at": "2026-07-14T08:00:00Z",
+    "investigation_started_at": "2026-07-14T08:05:00Z",
+    "affected_service_ids": ["orders-web"],
+    "severity": "high",
+    "status": "analyzing",
+    "root_cause_status": "unassessed"
+  },
+  "services": [
+    {
+      "service_id": "orders-web",
+      "name": "Orders Web",
+      "environment": "sample-production",
+      "service_type": "web",
+      "expected_endpoints": ["https://orders.example.test"],
+      "owner": "Sample Application Team",
+      "criticality": "high"
+    },
+    {
+      "service_id": "identity",
+      "name": "Identity Service",
+      "environment": "sample-production",
+      "service_type": "identity",
+      "expected_endpoints": [],
+      "owner": "Sample Identity Team",
+      "criticality": "high"
+    },
+    {
+      "service_id": "orders-db",
+      "name": "Orders Database",
+      "environment": "sample-production",
+      "service_type": "database",
+      "expected_endpoints": [],
+      "owner": "Sample Database Team",
+      "criticality": "high"
+    }
+  ],
+  "dependencies": [
+    {
+      "dependency_id": "dep-orders-identity",
+      "source_service_id": "orders-web",
+      "target_service_id": "identity",
+      "dependency_type": "authenticates-through",
+      "required": true,
+      "evidence_source": "sample-service-map",
+      "confidence": "high"
+    },
+    {
+      "dependency_id": "dep-orders-db",
+      "source_service_id": "orders-web",
+      "target_service_id": "orders-db",
+      "dependency_type": "reads-from",
+      "required": true,
+      "evidence_source": "sample-service-map",
+      "confidence": "high"
+    }
+  ],
+  "evidence": [
+    {
+      "evidence_id": "ev-dns-resolution-1",
+      "evidence_type": "dns-resolution",
+      "source_system": "WATCH sample export",
+      "collected_at": "2026-07-14T08:06:00Z",
+      "target_reference": "orders-web",
+      "normalized_data": {"hostname": "orders.example.test", "resolved_ips": ["203.0.113.10"]},
+      "collection_status": "completed",
+      "limitations": ["Synthetic documentation address used."]
+    },
+    {
+      "evidence_id": "ev-http-failure-1",
+      "evidence_type": "http-response",
+      "source_system": "WATCH sample export",
+      "collected_at": "2026-07-14T08:06:05Z",
+      "target_reference": "orders-web",
+      "normalized_data": {"status": null, "error": "connection timeout"},
+      "collection_status": "partial",
+      "limitations": ["No server-side logs available."]
+    },
+    {
+      "evidence_id": "ev-http-success-1",
+      "evidence_type": "http-response",
+      "source_system": "Operator sample evidence",
+      "collected_at": "2026-07-14T08:07:00Z",
+      "target_reference": "orders-web",
+      "normalized_data": {"status": 200, "response_ms": 240},
+      "collection_status": "completed",
+      "limitations": ["Collected from a different source location."]
+    },
+    {
+      "evidence_id": "ev-dns-audit-1",
+      "evidence_type": "dns-audit-finding",
+      "source_system": "DNS Audit Tool sample export",
+      "collected_at": "2026-07-14T08:08:00Z",
+      "target_reference": "orders-web",
+      "normalized_data": {"finding": "Missing PTR", "record_name": "orders", "ip_address": "203.0.113.10"},
+      "collection_status": "completed",
+      "limitations": ["PTR relevance to this workflow is unconfirmed."]
+    },
+    {
+      "evidence_id": "ev-tls-1",
+      "evidence_type": "tls-certificate",
+      "source_system": "WATCH sample export",
+      "collected_at": "2026-07-14T08:09:00Z",
+      "target_reference": "orders-web",
+      "normalized_data": {"days_remaining": 21, "hostname_match": true},
+      "collection_status": "completed",
+      "limitations": []
+    }
+  ]
+}
