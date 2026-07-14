@@ -29,20 +29,33 @@
 - [x] Download generated Markdown reports.
 - [x] Keep the local workspace fixed at application startup.
 - [x] Cover the API lifecycle and local persistence with automated tests.
-- [x] Lock the public OpenAPI paths and methods with regression proof.
+- [x] Add explicit OpenAPI path and method regression proof.
 
 ## M3 — Operator interface
 
-- [ ] Incident intake.
-- [ ] Evidence inventory.
-- [ ] Dependency view.
-- [ ] Timeline, findings and missing evidence.
-- [ ] Report preview.
-- [ ] Playwright functional and visual proof.
+- [x] Responsive local operator workbench.
+- [x] Incident intake using the validated API contract.
+- [x] Incident list and selection.
+- [x] Service and dependency views.
+- [x] Evidence inventory.
+- [x] Timeline, findings, missing evidence and safe-check views.
+- [x] Explicit analysis execution.
+- [x] Markdown report preview.
+- [x] Output escaping for user-controlled values.
+- [x] Path-independent Windows UI launcher.
+- [x] Playwright functional workflow and screenshot artifact.
+- [ ] Complete authoritative Linux and Windows CI proof for M3.
+
+## M4 — Bounded live collectors
+
+- [ ] Single-target DNS evidence collection.
+- [ ] Single-target HTTP/service reachability collection.
+- [ ] TLS certificate evidence collection.
+- [ ] Explicit timeouts and source-location provenance.
+- [ ] Collector safety and network-boundary tests.
 
 ## Deferred
 
-- Live bounded collectors.
 - SQLite incident history.
 - WATCH-to-OPSCORE handoff contract.
 - Port/connectivity evidence.

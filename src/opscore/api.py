@@ -5,11 +5,13 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Response, status
+from fastapi.responses import HTMLResponse
 
 from opscore import __version__
 from opscore.analysis import analyze
 from opscore.models import EvidenceItem, Incident, IncidentAnalysis, IncidentBundle
 from opscore.storage import IncidentStore
+from opscore.ui import render_operator_interface
 
 
 def create_app(workspace: Path | None = None) -> FastAPI:
@@ -18,6 +20,10 @@ def create_app(workspace: Path | None = None) -> FastAPI:
     )
     store = IncidentStore(resolved_workspace)
     application = FastAPI(title="OPSCORE API", version=__version__)
+
+    @application.get("/", response_class=HTMLResponse, include_in_schema=False)
+    def operator_interface() -> str:
+        return render_operator_interface()
 
     @application.get("/api/health")
     def health() -> dict[str, str]:

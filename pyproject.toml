@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "opscore"
-version = "0.2.0"
+version = "0.3.0"
 description = "Local-first infrastructure and production incident evidence workbench"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -24,6 +24,9 @@ dev = [
   "pytest-cov>=5,<7",
   "ruff>=0.6,<1",
   "mypy>=1.11,<2",
+]
+browser = [
+  "playwright>=1.48,<2",
 ]
 
 [project.scripts]
