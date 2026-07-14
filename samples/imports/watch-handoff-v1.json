@@ -1,0 +1,25 @@
+{
+  "contract_version": "watch.opscore/v1",
+  "target_reference": "orders-web",
+  "source_location": "watch-local-runner",
+  "run": {
+    "run_id": "watch-run-001",
+    "target_id": "orders-public",
+    "started_at": "2026-07-14T10:00:00Z",
+    "finished_at": "2026-07-14T10:00:02Z",
+    "status": "completed",
+    "observations": {
+      "http_status": 503,
+      "final_url": "https://orders.example.test/health",
+      "redirect_count": 0,
+      "redirect_chain": [],
+      "response_ms": 231,
+      "tls_days_remaining": 18,
+      "page_title": null,
+      "resolved_ips": [
+        "192.0.2.10"
+      ],
+      "errors": []
+    }
+  }
+}
