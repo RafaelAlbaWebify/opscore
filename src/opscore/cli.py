@@ -10,6 +10,7 @@ import typer
 from opscore.collectors import CollectorRequest, collect_target
 from opscore.demo import run_demo
 from opscore.imports import run_import_correlation
+from opscore.watch_handoff import WatchHandoff, evidence_from_handoff
 
 app = typer.Typer(help="OPSCORE infrastructure incident evidence workbench")
 _DEFAULT_DNS_COLLECTED_AT = datetime.fromisoformat("2026-07-14T08:08:00+00:00")
@@ -93,6 +94,29 @@ def collect(
         encoding="utf-8",
     )
     typer.echo("OPSCORE bounded collection PASS")
+    typer.echo(f"Evidence: {output}")
+
+
+@app.command("watch-handoff")
+def validate_watch_handoff(
+    handoff_file: Annotated[Path, typer.Option(help="WATCH handoff JSON file")] = Path(
+        "samples/imports/watch-handoff-v1.json"
+    ),
+    workspace: Annotated[Path, typer.Option(help="Output workspace")] = Path(
+        ".opscore-data/watch-handoff"
+    ),
+) -> None:
+    payload = json.loads(handoff_file.read_text(encoding="utf-8"))
+    handoff = WatchHandoff.model_validate(payload)
+    evidence = evidence_from_handoff(handoff)
+    workspace.mkdir(parents=True, exist_ok=True)
+    output = workspace / f"{handoff.run.run_id}-evidence.json"
+    output.write_text(
+        json.dumps([item.model_dump(mode="json") for item in evidence], indent=2),
+        encoding="utf-8",
+    )
+    typer.echo("OPSCORE WATCH handoff PASS")
+    typer.echo(f"Contract: {handoff.contract_version}")
     typer.echo(f"Evidence: {output}")
 
 

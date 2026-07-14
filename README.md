@@ -2,7 +2,7 @@
 
 > Infrastructure and production operations incident evidence workbench.
 
-OPSCORE is a local-first, read-only workbench for correlating infrastructure and production-service evidence around an incident. It imports public-safe DNS Audit Tool CSV evidence and WATCH JSON run evidence, performs bounded single-target DNS/HTTP/TLS collection, normalizes source provenance, applies deterministic correlation rules, and presents support-ready findings, timelines, missing evidence, safe next checks, and reports through an API, CLI, and local operator interface.
+OPSCORE is a local-first, read-only workbench for correlating infrastructure and production-service evidence around an incident. It imports public-safe DNS Audit Tool CSV evidence and versioned WATCH handoffs, performs bounded single-target DNS/HTTP/TLS collection, normalizes source provenance, applies deterministic correlation rules, and presents support-ready findings, timelines, missing evidence, safe next checks, and reports through an API, CLI, and local operator interface.
 
 ## Portfolio purpose
 
@@ -20,7 +20,7 @@ It is deliberately separated from:
 ```text
 incident and service context
 + DNS Audit Tool CSV
-+ WATCH JSON run
++ versioned WATCH handoff
 + one explicit DNS/HTTP/TLS target
 → source validation and provenance
 → normalized evidence
@@ -60,8 +60,16 @@ python -m opscore.cli demo --workspace .opscore-data
 python -m opscore.cli correlate --workspace .opscore-data\imported
 python -m opscore.cli collect --url https://example.test/health `
   --target-reference service-web --source-location operator-laptop
+python -m opscore.cli watch-handoff `
+  --handoff-file samples/imports/watch-handoff-v1.json
 python -m uvicorn opscore.api:app --host 127.0.0.1 --port 8000
 ```
+
+## WATCH handoff
+
+M5 defines the explicit `watch.opscore/v1` contract between WATCH and OPSCORE. One handoff carries a WATCH run, incident service reference and source location. OPSCORE validates the version, normalizes DNS/HTTP/TLS observations, preserves run provenance and rejects duplicate run imports.
+
+See `docs/watch-handoff.md` and `samples/imports/watch-handoff-v1.json`.
 
 ## Bounded collection
 
@@ -100,7 +108,7 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
   verify-pr agent/example-branch
 ```
 
-The script performs a normal authenticated push, waits for pull-request CI, prints Linux and Windows job results and saves failed logs to the Desktop.
+The script performs a normal authenticated push, waits for pull-request CI, prints Linux and Windows job results and saves failed logs to `C:\Users\ralba\Downloads`.
 
 ## Automated proof
 
@@ -110,7 +118,8 @@ The repository is configured to run on Linux and Windows:
 - strict mypy checks;
 - pytest with an enforced 85% coverage minimum;
 - deterministic demo generation;
-- DNS CSV and WATCH JSON import correlation;
+- DNS CSV and WATCH evidence correlation;
+- WATCH handoff contract and duplicate-run tests;
 - bounded collector safety tests;
 - PowerShell operator verification;
 - Playwright browser workflow with a screenshot artifact;

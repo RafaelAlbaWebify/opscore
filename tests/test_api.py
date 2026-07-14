@@ -110,6 +110,22 @@ def test_incident_api_not_found(tmp_path: Path) -> None:
             "source_location": "pytest",
         },
     ).status_code == 404
+    assert client.post(
+        "/api/incidents/inc-missing/watch-handoff",
+        json={
+            "contract_version": "watch.opscore/v1",
+            "target_reference": "service-web",
+            "source_location": "pytest",
+            "run": {
+                "run_id": "missing-001",
+                "target_id": "service-web",
+                "started_at": "2026-07-14T10:00:00Z",
+                "finished_at": "2026-07-14T10:00:01Z",
+                "status": "completed",
+                "observations": {"http_status": 200},
+            },
+        },
+    ).status_code == 404
     assert client.get("/api/incidents/inc-missing/analysis").status_code == 404
     assert client.get("/api/incidents/inc-missing/report.md").status_code == 404
 
@@ -122,6 +138,7 @@ def test_openapi_incident_contract(tmp_path: Path) -> None:
         "/api/incidents/{incident_id}": {"get"},
         "/api/incidents/{incident_id}/evidence": {"post"},
         "/api/incidents/{incident_id}/collect": {"post"},
+        "/api/incidents/{incident_id}/watch-handoff": {"post"},
         "/api/incidents/{incident_id}/analyze": {"post"},
         "/api/incidents/{incident_id}/analysis": {"get"},
         "/api/incidents/{incident_id}/report.md": {"get"},
