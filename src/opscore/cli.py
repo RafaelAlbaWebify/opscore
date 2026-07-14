@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime
 from pathlib import Path
 from typing import Annotated
 
 import typer
 
+from opscore.collectors import CollectorRequest, collect_target
 from opscore.demo import run_demo
 from opscore.imports import run_import_correlation
 
@@ -63,6 +65,35 @@ def correlate(
     typer.echo("OPSCORE import correlation PASS")
     typer.echo(f"Markdown: {markdown_path}")
     typer.echo(f"JSON: {json_path}")
+
+
+@app.command()
+def collect(
+    url: Annotated[str, typer.Option(help="One explicit HTTP or HTTPS target")],
+    target_reference: Annotated[str, typer.Option(help="Incident service ID")],
+    source_location: Annotated[str, typer.Option(help="Operator-defined collection location")],
+    timeout_seconds: Annotated[
+        float, typer.Option(min=0.5, max=10.0, help="Per-operation timeout")
+    ] = 5.0,
+    workspace: Annotated[Path, typer.Option(help="Output workspace")] = Path(
+        ".opscore-data/collected"
+    ),
+) -> None:
+    request = CollectorRequest(
+        url=url,
+        target_reference=target_reference,
+        source_location=source_location,
+        timeout_seconds=timeout_seconds,
+    )
+    evidence = collect_target(request)
+    workspace.mkdir(parents=True, exist_ok=True)
+    output = workspace / "bounded-evidence.json"
+    output.write_text(
+        json.dumps([item.model_dump(mode="json") for item in evidence], indent=2),
+        encoding="utf-8",
+    )
+    typer.echo("OPSCORE bounded collection PASS")
+    typer.echo(f"Evidence: {output}")
 
 
 if __name__ == "__main__":
