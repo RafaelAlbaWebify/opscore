@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import json
 import socket
+from pathlib import Path
 
 import httpx
 import pytest
 from pydantic import ValidationError
+from typer.testing import CliRunner
 
+from opscore.cli import app as cli_app
 from opscore.collectors import CollectorRequest, collect_target
 
 
@@ -25,7 +29,9 @@ def test_collector_request_rejects_unsafe_targets() -> None:
             )
 
 
-def test_http_target_collects_dns_and_http_failure_evidence(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_http_target_collects_failure_evidence(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     def fail_dns(*args: object, **kwargs: object) -> object:
         raise socket.gaierror("synthetic DNS failure")
 
@@ -50,12 +56,19 @@ def test_http_target_collects_dns_and_http_failure_evidence(monkeypatch: pytest.
     assert all(item.normalized_data["source_location"] == "pytest" for item in evidence)
 
 
-def test_https_target_adds_bounded_tls_failure_evidence(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(
-        socket,
-        "getaddrinfo",
-        lambda *args, **kwargs: [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("192.0.2.10", 0))],
-    )
+def test_https_target_adds_tls_failure_evidence(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def synthetic_dns(*args: object, **kwargs: object) -> list[tuple[object, ...]]:
+        return [
+            (
+                socket.AF_INET,
+                socket.SOCK_STREAM,
+                6,
+                "",
+                ("192.0.2.10", 0),
+            )
+        ]
 
     def fail_http(*args: object, **kwargs: object) -> object:
         request = httpx.Request("GET", "https://example.test")
@@ -64,6 +77,7 @@ def test_https_target_adds_bounded_tls_failure_evidence(monkeypatch: pytest.Monk
     def fail_tls(*args: object, **kwargs: object) -> object:
         raise TimeoutError("synthetic TLS timeout")
 
+    monkeypatch.setattr(socket, "getaddrinfo", synthetic_dns)
     monkeypatch.setattr(httpx, "stream", fail_http)
     monkeypatch.setattr(socket, "create_connection", fail_tls)
 
@@ -84,3 +98,50 @@ def test_https_target_adds_bounded_tls_failure_evidence(monkeypatch: pytest.Monk
     assert evidence[0].normalized_data["resolved_ips"] == ["192.0.2.10"]
     assert evidence[2].collection_status == "partial"
     assert "synthetic TLS timeout" in evidence[2].normalized_data["error"]
+
+
+def test_collect_cli_writes_json(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        "opscore.cli.collect_target",
+        lambda request: [
+            collect_target(
+                CollectorRequest(
+                    url="http://example.test",
+                    target_reference="orders-web",
+                    source_location="pytest",
+                    timeout_seconds=1,
+                )
+            )[0]
+        ],
+    )
+    monkeypatch.setattr(
+        socket,
+        "getaddrinfo",
+        lambda *args, **kwargs: [
+            (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("192.0.2.10", 0))
+        ],
+    )
+
+    result = CliRunner().invoke(
+        cli_app,
+        [
+            "collect",
+            "--url",
+            "http://example.test",
+            "--target-reference",
+            "orders-web",
+            "--source-location",
+            "pytest",
+            "--workspace",
+            str(tmp_path),
+        ],
+    )
+
+    assert result.exit_code == 0
+    output = tmp_path / "bounded-evidence.json"
+    assert output.exists()
+    payload = json.loads(output.read_text(encoding="utf-8"))
+    assert payload[0]["evidence_type"] == "dns-resolution"
