@@ -120,6 +120,15 @@ def test_incident_api_not_found(tmp_path: Path) -> None:
         },
     ).status_code == 404
     assert client.post(
+        "/api/incidents/inc-missing/backup-awareness",
+        json={
+            "target_reference": "service-web",
+            "source_system": "synthetic-backup-console",
+            "source_location": "pytest",
+            "protection_status": "unknown",
+        },
+    ).status_code == 404
+    assert client.post(
         "/api/incidents/inc-missing/watch-handoff",
         json={
             "contract_version": "watch.opscore/v1",
@@ -148,6 +157,7 @@ def test_openapi_incident_contract(tmp_path: Path) -> None:
         "/api/incidents/{incident_id}/evidence": {"post"},
         "/api/incidents/{incident_id}/collect": {"post"},
         "/api/incidents/{incident_id}/connectivity": {"post"},
+        "/api/incidents/{incident_id}/backup-awareness": {"post"},
         "/api/incidents/{incident_id}/watch-handoff": {"post"},
         "/api/incidents/{incident_id}/analyze": {"post"},
         "/api/incidents/{incident_id}/analysis": {"get"},
