@@ -70,12 +70,23 @@
 - [x] Unsupported-observation rejection.
 - [x] Public sample payload and integration documentation.
 - [x] OpenAPI and lifecycle regression tests.
-- [ ] Complete authoritative Linux and Windows CI proof for M5.
+- [x] Complete authoritative Linux and Windows CI proof for M5.
+
+## M6 — Bounded TCP connectivity evidence
+
+- [x] One explicit hostname or IP address and one explicit TCP port.
+- [x] Fixed timeout between 0.5 and 10 seconds.
+- [x] Read-only connection attempt without application payloads.
+- [x] Source-location and elapsed-time provenance.
+- [x] Partial evidence for refused, unreachable and timed-out connections.
+- [x] Incident API endpoint and service validation.
+- [x] One-off CLI JSON export.
+- [x] Deterministic offline socket tests.
+- [ ] Complete authoritative Linux and Windows CI proof for M6.
 
 ## Deferred
 
 - SQLite incident history.
-- Port/connectivity evidence.
 - Backup-awareness evidence.
 - Hypothesis progression and final RCA workflow.
 
