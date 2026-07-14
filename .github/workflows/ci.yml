@@ -51,7 +51,7 @@ jobs:
           } > artifacts/verification-summary.md
       - name: Upload proof
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: opscore-linux-proof-${{ github.run_number }}
           path: artifacts/
@@ -93,7 +93,7 @@ jobs:
           python -m pip freeze | Set-Content artifacts\dependencies.txt
       - name: Upload proof
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: opscore-windows-proof-${{ github.run_number }}
           path: artifacts/
