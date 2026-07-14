@@ -56,7 +56,10 @@ def _build_timeline(bundle: IncidentBundle) -> list[TimelineEvent]:
                 timestamp=item.collected_at,
                 source=item.source_system,
                 event_type=item.evidence_type,
-                summary=f"{item.evidence_type} evidence collected for {item.target_reference}",
+                summary=(
+                    f"{item.evidence_type} evidence collected for "
+                    f"{item.target_reference}"
+                ),
                 evidence_id=item.evidence_id,
             )
         )
@@ -67,13 +70,17 @@ def _http_dns_findings(evidence: list[EvidenceItem]) -> list[Finding]:
     dns_success = [
         item
         for item in evidence
-        if item.evidence_type == "dns-resolution" and item.normalized_data.get("resolved_ips")
+        if item.evidence_type == "dns-resolution"
+        and item.normalized_data.get("resolved_ips")
     ]
     http_fail = [
         item
         for item in evidence
         if item.evidence_type == "http-response"
-        and (item.normalized_data.get("status") is None or item.normalized_data.get("error"))
+        and (
+            item.normalized_data.get("status") is None
+            or item.normalized_data.get("error")
+        )
     ]
     http_success = [
         item
@@ -87,11 +94,18 @@ def _http_dns_findings(evidence: list[EvidenceItem]) -> list[Finding]:
         findings.append(
             _finding(
                 "DNS_OK_HTTP_UNAVAILABLE",
-                "Name resolution completed, but application-layer reachability was not established.",
+                (
+                    "Name resolution completed, but application-layer "
+                    "reachability was not established."
+                ),
                 FindingSeverity.CRITICAL,
                 Confidence.HIGH,
                 [dns_success[0].evidence_id, http_fail[0].evidence_id],
-                missing=["port/connectivity path", "server-side service state", "application logs"],
+                missing=[
+                    "port/connectivity path",
+                    "server-side service state",
+                    "application logs",
+                ],
                 checks=[
                     "Validate the configured service port from an approved source location.",
                     "Review service and application logs for the evidence time window.",
@@ -108,9 +122,16 @@ def _http_dns_findings(evidence: list[EvidenceItem]) -> list[Finding]:
                 Confidence.HIGH,
                 [http_success[0].evidence_id],
                 contradictory=[http_fail[0].evidence_id],
-                missing=["source location", "resolved address per run", "target instance identity"],
+                missing=[
+                    "source location",
+                    "resolved address per run",
+                    "target instance identity",
+                ],
                 checks=[
-                    "Compare collection times, source locations, DNS answers and target instances."
+                    (
+                        "Compare collection times, source locations, DNS answers "
+                        "and target instances."
+                    )
                 ],
             )
         )
@@ -133,9 +154,13 @@ def _dns_audit_findings(evidence: list[EvidenceItem]) -> list[Finding]:
             FindingSeverity.WARNING,
             Confidence.MEDIUM,
             [item.evidence_id for item in relevant],
-            missing=["confirmation that reverse DNS is required by the affected workflow"],
+            missing=[
+                "confirmation that reverse DNS is required by the affected workflow"
+            ],
             checks=["Validate record ownership and expected forward/reverse naming."],
-            non_actions=["Do not delete or modify DNS records without ownership validation."],
+            non_actions=[
+                "Do not delete or modify DNS records without ownership validation."
+            ],
         )
     ]
 
@@ -153,12 +178,17 @@ def _tls_findings(evidence: list[EvidenceItem]) -> list[Finding]:
     return [
         _finding(
             "TLS_CERTIFICATE_EXPIRY_RISK",
-            "The available certificate evidence is within the configured 30-day expiry window.",
+            (
+                "The available certificate evidence is within the configured "
+                "30-day expiry window."
+            ),
             FindingSeverity.WARNING,
             Confidence.HIGH,
             [item.evidence_id for item in expiring],
             missing=["certificate renewal ownership", "deployment path"],
-            checks=["Confirm renewal ownership and the certificate deployment procedure."],
+            checks=[
+                "Confirm renewal ownership and the certificate deployment procedure."
+            ],
             non_actions=[
                 "Do not claim the certificate caused the incident without handshake evidence."
             ],
@@ -179,7 +209,10 @@ def _dependency_findings(bundle: IncidentBundle) -> list[Finding]:
     return [
         _finding(
             "REQUIRED_DEPENDENCY_EVIDENCE_MISSING",
-            f"The investigation contains no direct evidence for required dependencies: {names}.",
+            (
+                "The investigation contains no direct evidence for required "
+                f"dependencies: {names}."
+            ),
             FindingSeverity.WARNING,
             Confidence.HIGH,
             [],
@@ -188,13 +221,19 @@ def _dependency_findings(bundle: IncidentBundle) -> list[Finding]:
                 for dep in missing_dependencies
             ],
             checks=[
-                "Collect bounded evidence for each required dependency before concluding root cause."
+                (
+                    "Collect bounded evidence for each required dependency "
+                    "before concluding root cause."
+                )
             ],
         )
     ]
 
 
-def analyze(bundle: IncidentBundle, generated_at: datetime | None = None) -> IncidentAnalysis:
+def analyze(
+    bundle: IncidentBundle,
+    generated_at: datetime | None = None,
+) -> IncidentAnalysis:
     findings = []
     findings.extend(_http_dns_findings(bundle.evidence))
     findings.extend(_dns_audit_findings(bundle.evidence))

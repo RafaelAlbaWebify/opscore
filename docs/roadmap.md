@@ -22,11 +22,14 @@
 
 ## M2 — Incident API
 
-- [ ] Create and retrieve incident bundles.
-- [ ] Import evidence through bounded API endpoints.
-- [ ] Run analysis and retrieve findings/timeline.
-- [ ] Download reports.
-- [ ] OpenAPI contract tests.
+- [x] Create, list and retrieve incident bundles.
+- [x] Append validated evidence through a bounded endpoint.
+- [x] Reject duplicate incident and evidence identifiers.
+- [x] Run analysis explicitly and retrieve persisted results.
+- [x] Download generated Markdown reports.
+- [x] Keep the local workspace fixed at application startup.
+- [x] Cover the API lifecycle and local persistence with automated tests.
+- [x] Lock the public OpenAPI paths and methods with regression proof.
 
 ## M3 — Operator interface
 

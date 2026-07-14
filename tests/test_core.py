@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 from typer.testing import CliRunner
 
+from opscore import __version__
 from opscore.adapters.dns_audit import import_dns_audit_csv
 from opscore.adapters.watch_run import import_watch_run
 from opscore.analysis import analyze
@@ -23,7 +24,11 @@ SAMPLE = Path("samples/incidents/orders-service-unavailable.json")
 def test_health_endpoint() -> None:
     response = TestClient(api_app).get("/api/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok", "service": "opscore", "version": "0.1.0"}
+    assert response.json() == {
+        "status": "ok",
+        "service": "opscore",
+        "version": __version__,
+    }
 
 
 def test_demo_command(tmp_path: Path) -> None:

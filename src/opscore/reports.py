@@ -53,7 +53,10 @@ def render_markdown(analysis: IncidentAnalysis) -> str:
         )
     lines.extend(["", "## Timeline", ""])
     for event in analysis.timeline:
-        lines.append(f"- {event.timestamp.isoformat()} — **{event.event_type}** — {event.summary}")
+        lines.append(
+            f"- {event.timestamp.isoformat()} — **{event.event_type}** — "
+            f"{event.summary}"
+        )
     lines.extend(["", "## Evidence findings", ""])
     if not analysis.findings:
         lines.append("- No deterministic findings were generated from the available evidence.")
@@ -65,7 +68,10 @@ def render_markdown(analysis: IncidentAnalysis) -> str:
                 f"- Severity: **{finding.severity.value}**",
                 f"- Confidence: **{finding.confidence.value}**",
                 f"- Statement: {finding.statement}",
-                f"- Supporting evidence: {', '.join(finding.supporting_evidence_ids) or 'none'}",
+                (
+                    "- Supporting evidence: "
+                    f"{', '.join(finding.supporting_evidence_ids) or 'none'}"
+                ),
                 (
                     "- Contradictory evidence: "
                     f"{', '.join(finding.contradictory_evidence_ids) or 'none'}"
@@ -83,9 +89,12 @@ def render_markdown(analysis: IncidentAnalysis) -> str:
         [
             "## Limitations",
             "",
-            "- M1 uses sanitized local and imported evidence only.",
+            "- M2 uses sanitized local and imported evidence only.",
             "- No external systems were queried or modified.",
-            "- Findings are deterministic evidence statements, not automatic root-cause declarations.",
+            (
+                "- Findings are deterministic evidence statements, not automatic "
+                "root-cause declarations."
+            ),
             "",
             "## Evidence provenance",
             "",
