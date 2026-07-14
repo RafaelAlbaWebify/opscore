@@ -1,10 +1,13 @@
+from datetime import UTC, datetime
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from opscore import __version__
 from opscore.api import create_app
 from opscore.demo import load_bundle
+from opscore.models import EvidenceItem
 
 SAMPLE = Path("samples/incidents/orders-service-unavailable.json")
 
@@ -63,10 +66,50 @@ def test_incident_api_lifecycle(tmp_path: Path) -> None:
     assert "OPSCORE Incident Evidence Report" in report.text
 
 
+def test_bounded_collection_endpoint(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def synthetic_collection(request: object) -> list[EvidenceItem]:
+        return [
+            EvidenceItem(
+                evidence_id="ev-live-dns-test",
+                evidence_type="dns-resolution",
+                source_system="opscore-bounded-collector",
+                collected_at=datetime(2026, 7, 14, 10, 0, tzinfo=UTC),
+                target_reference="orders-web",
+                normalized_data={"resolved_ips": ["192.0.2.10"]},
+            )
+        ]
+
+    monkeypatch.setattr("opscore.api.collect_target", synthetic_collection)
+    client = TestClient(create_app(tmp_path))
+    payload = load_bundle(SAMPLE).model_dump(mode="json")
+    assert client.post("/api/incidents", json=payload).status_code == 201
+
+    request = {
+        "url": "https://orders.example.test/health",
+        "target_reference": "orders-web",
+        "source_location": "pytest",
+        "timeout_seconds": 2,
+    }
+    collected = client.post("/api/incidents/inc-orders-001/collect", json=request)
+    assert collected.status_code == 201
+    assert collected.json()["evidence"][-1]["evidence_id"] == "ev-live-dns-test"
+
+    request["target_reference"] = "unknown-service"
+    assert client.post("/api/incidents/inc-orders-001/collect", json=request).status_code == 422
+
+
 def test_incident_api_not_found(tmp_path: Path) -> None:
     client = TestClient(create_app(tmp_path))
     assert client.get("/api/incidents/inc-missing").status_code == 404
     assert client.post("/api/incidents/inc-missing/analyze").status_code == 404
+    assert client.post(
+        "/api/incidents/inc-missing/collect",
+        json={
+            "url": "https://example.test",
+            "target_reference": "service-web",
+            "source_location": "pytest",
+        },
+    ).status_code == 404
     assert client.get("/api/incidents/inc-missing/analysis").status_code == 404
     assert client.get("/api/incidents/inc-missing/report.md").status_code == 404
 
@@ -78,6 +121,7 @@ def test_openapi_incident_contract(tmp_path: Path) -> None:
         "/api/incidents": {"get", "post"},
         "/api/incidents/{incident_id}": {"get"},
         "/api/incidents/{incident_id}/evidence": {"post"},
+        "/api/incidents/{incident_id}/collect": {"post"},
         "/api/incidents/{incident_id}/analyze": {"post"},
         "/api/incidents/{incident_id}/analysis": {"get"},
         "/api/incidents/{incident_id}/report.md": {"get"},
