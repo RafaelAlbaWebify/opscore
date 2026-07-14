@@ -2,7 +2,7 @@
 
 > Infrastructure and production operations incident evidence workbench.
 
-OPSCORE is a local-first, read-only workbench for correlating infrastructure and production-service evidence around an incident. It imports public-safe DNS Audit Tool CSV evidence and WATCH JSON run evidence, normalizes source provenance, applies deterministic correlation rules, and presents support-ready findings, timelines, missing evidence, safe next checks, and reports through an API, CLI, and local operator interface.
+OPSCORE is a local-first, read-only workbench for correlating infrastructure and production-service evidence around an incident. It imports public-safe DNS Audit Tool CSV evidence and WATCH JSON run evidence, performs bounded single-target DNS/HTTP/TLS collection, normalizes source provenance, applies deterministic correlation rules, and presents support-ready findings, timelines, missing evidence, safe next checks, and reports through an API, CLI, and local operator interface.
 
 ## Portfolio purpose
 
@@ -21,8 +21,9 @@ It is deliberately separated from:
 incident and service context
 + DNS Audit Tool CSV
 + WATCH JSON run
-→ source validation
-→ normalized evidence with provenance
++ one explicit DNS/HTTP/TLS target
+→ source validation and provenance
+→ normalized evidence
 → cross-source correlation
 → timeline, findings and missing evidence
 → local incident persistence and bounded API
@@ -57,8 +58,23 @@ Direct Python commands:
 ```powershell
 python -m opscore.cli demo --workspace .opscore-data
 python -m opscore.cli correlate --workspace .opscore-data\imported
+python -m opscore.cli collect --url https://example.test/health `
+  --target-reference service-web --source-location operator-laptop
 python -m uvicorn opscore.api:app --host 127.0.0.1 --port 8000
 ```
+
+## Bounded collection
+
+M4 collects read-only evidence for one explicit HTTP or HTTPS URL at a time:
+
+- DNS resolution for the supplied hostname;
+- one HTTP GET without redirect following or response-body retention;
+- one TLS handshake for HTTPS targets;
+- a fixed timeout between 0.5 and 10 seconds;
+- operator-defined source-location provenance;
+- partial evidence when a bounded operation fails.
+
+It does not crawl, scan port ranges, enumerate neighboring hosts, retry broadly or modify remote systems. See `docs/collectors.md`.
 
 ## Operator workbench
 
@@ -72,7 +88,19 @@ The local interface provides:
 - timeline, findings, missing evidence and safe next checks;
 - Markdown report preview.
 
-User-controlled values are escaped before HTML rendering. The interface writes only to the configured local OPSCORE workspace and does not query or modify external infrastructure.
+User-controlled values are escaped before HTML rendering. The interface writes only to the configured local OPSCORE workspace.
+
+## Developer workflow
+
+After the repository is cloned, future branches can be synchronized and verified from any PowerShell working directory:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass `
+  -File C:\Users\ralba\source\repos\opscore\scripts\github-workflow.ps1 `
+  verify-pr agent/example-branch
+```
+
+The script performs a normal authenticated push, waits for pull-request CI, prints Linux and Windows job results and saves failed logs to the Desktop.
 
 ## Automated proof
 
@@ -83,6 +111,7 @@ The repository is configured to run on Linux and Windows:
 - pytest with an enforced 85% coverage minimum;
 - deterministic demo generation;
 - DNS CSV and WATCH JSON import correlation;
+- bounded collector safety tests;
 - PowerShell operator verification;
 - Playwright browser workflow with a screenshot artifact;
 - review artifact generation.
