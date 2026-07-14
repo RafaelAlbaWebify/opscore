@@ -3,12 +3,15 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
+from typer.testing import CliRunner
 
 from opscore.api import create_app
+from opscore.cli import app
 from opscore.demo import load_bundle
 from opscore.watch_handoff import WatchHandoff, evidence_from_handoff
 
 SAMPLE = Path("samples/incidents/orders-service-unavailable.json")
+HANDOFF_SAMPLE = Path("samples/imports/watch-handoff-v1.json")
 
 
 def handoff_payload() -> dict[str, object]:
@@ -52,7 +55,10 @@ def test_handoff_normalizes_traceable_evidence() -> None:
         "tls-certificate",
     ]
     assert all(item.source_system == "WATCH handoff" for item in evidence)
-    assert all(item.raw_reference == "WATCH:run-001@watch-local-runner" for item in evidence)
+    assert all(
+        item.raw_reference == "WATCH:run-001@watch-local-runner"
+        for item in evidence
+    )
     assert all(
         item.normalized_data["contract_version"] == "watch.opscore/v1"
         for item in evidence
@@ -99,3 +105,20 @@ def test_handoff_requires_supported_observations(tmp_path: Path) -> None:
     )
     assert response.status_code == 422
     assert response.json()["detail"] == "WATCH handoff contains no supported observations"
+
+
+def test_watch_handoff_cli_exports_normalized_evidence(tmp_path: Path) -> None:
+    result = CliRunner().invoke(
+        app,
+        [
+            "watch-handoff",
+            "--handoff-file",
+            str(HANDOFF_SAMPLE),
+            "--workspace",
+            str(tmp_path),
+        ],
+    )
+    assert result.exit_code == 0
+    assert "OPSCORE WATCH handoff PASS" in result.stdout
+    assert "watch.opscore/v1" in result.stdout
+    assert (tmp_path / "watch-run-001-evidence.json").exists()
