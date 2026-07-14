@@ -25,6 +25,9 @@ dev = [
   "ruff>=0.6,<1",
   "mypy>=1.11,<2",
 ]
+browser = [
+  "playwright>=1.48,<2",
+]
 
 [project.scripts]
 opscore = "opscore.cli:app"
