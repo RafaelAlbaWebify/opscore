@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import socket
+from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
@@ -11,6 +12,7 @@ from typer.testing import CliRunner
 
 from opscore.cli import app as cli_app
 from opscore.collectors import CollectorRequest, collect_target
+from opscore.models import EvidenceItem
 
 
 def test_collector_request_rejects_unsafe_targets() -> None:
@@ -104,26 +106,18 @@ def test_collect_cli_writes_json(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setattr(
-        "opscore.cli.collect_target",
-        lambda request: [
-            collect_target(
-                CollectorRequest(
-                    url="http://example.test",
-                    target_reference="orders-web",
-                    source_location="pytest",
-                    timeout_seconds=1,
-                )
-            )[0]
-        ],
+    synthetic = EvidenceItem(
+        evidence_id="ev-live-dns-cli-test",
+        evidence_type="dns-resolution",
+        source_system="opscore-bounded-collector",
+        collected_at=datetime(2026, 7, 14, 10, 0, tzinfo=UTC),
+        target_reference="orders-web",
+        normalized_data={
+            "resolved_ips": ["192.0.2.10"],
+            "source_location": "pytest",
+        },
     )
-    monkeypatch.setattr(
-        socket,
-        "getaddrinfo",
-        lambda *args, **kwargs: [
-            (socket.AF_INET, socket.SOCK_STREAM, 6, "", ("192.0.2.10", 0))
-        ],
-    )
+    monkeypatch.setattr("opscore.cli.collect_target", lambda request: [synthetic])
 
     result = CliRunner().invoke(
         cli_app,
