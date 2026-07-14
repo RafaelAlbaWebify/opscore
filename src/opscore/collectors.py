@@ -4,7 +4,7 @@ import socket
 import ssl
 from datetime import UTC, datetime
 from time import perf_counter
-from typing import Any
+from typing import Any, cast
 from urllib.parse import urlsplit
 from uuid import uuid4
 
@@ -135,7 +135,7 @@ def _tls_evidence(request: CollectorRequest, collected_at: datetime) -> Evidence
         context = ssl.create_default_context()
         with socket.create_connection((hostname, port), timeout=request.timeout_seconds) as raw:
             with context.wrap_socket(raw, server_hostname=hostname) as secured:
-                certificate = secured.getpeercert()
+                certificate = cast(dict[str, Any], secured.getpeercert() or {})
         expires_raw = certificate.get("notAfter")
         expires_at = (
             datetime.fromtimestamp(ssl.cert_time_to_seconds(expires_raw), tz=UTC)
@@ -147,15 +147,16 @@ def _tls_evidence(request: CollectorRequest, collected_at: datetime) -> Evidence
             if expires_at is not None
             else None
         )
+        subject_alt_names = [
+            value
+            for kind, value in certificate.get("subjectAltName", [])
+            if kind == "DNS"
+        ]
         data.update(
             {
                 "expires_at": expires_at.isoformat() if expires_at else None,
                 "days_remaining": days_remaining,
-                "subject_alt_names": [
-                    value
-                    for kind, value in certificate.get("subjectAltName", [])
-                    if kind == "DNS"
-                ],
+                "subject_alt_names": subject_alt_names,
             }
         )
         status = "completed"
