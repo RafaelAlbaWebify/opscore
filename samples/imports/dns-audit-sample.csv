@@ -1,0 +1,3 @@
+Zone,RecordName,RecordType,IPAddress,Finding,Severity,RecommendedAction
+example.test,orders,A,203.0.113.10,Missing PTR,Medium,Create or validate reverse lookup record
+example.test,orders-old,A,203.0.113.11,Potential stale record,Medium,Verify host ownership before removal
