@@ -57,12 +57,24 @@
 - [x] Incident API endpoint for explicit collection.
 - [x] One-off CLI collection and JSON export.
 - [x] Collector safety and network-boundary tests.
-- [ ] Complete authoritative Linux and Windows CI proof for M4.
+- [x] Complete authoritative Linux and Windows CI proof for M4.
+
+## M5 — WATCH handoff contract
+
+- [x] Versioned `watch.opscore/v1` handoff envelope.
+- [x] Explicit WATCH source-location and run provenance.
+- [x] DNS, HTTP and TLS evidence normalization.
+- [x] Incident API handoff endpoint.
+- [x] Incident-service validation.
+- [x] Duplicate WATCH run protection.
+- [x] Unsupported-observation rejection.
+- [x] Public sample payload and integration documentation.
+- [x] OpenAPI and lifecycle regression tests.
+- [ ] Complete authoritative Linux and Windows CI proof for M5.
 
 ## Deferred
 
 - SQLite incident history.
-- WATCH-to-OPSCORE handoff contract.
 - Port/connectivity evidence.
 - Backup-awareness evidence.
 - Hypothesis progression and final RCA workflow.
