@@ -57,3 +57,19 @@ def test_incident_api_not_found(tmp_path: Path) -> None:
     assert client.post("/api/incidents/inc-missing/analyze").status_code == 404
     assert client.get("/api/incidents/inc-missing/analysis").status_code == 404
     assert client.get("/api/incidents/inc-missing/report.md").status_code == 404
+
+
+def test_openapi_incident_contract(tmp_path: Path) -> None:
+    paths = create_app(tmp_path).openapi()["paths"]
+    expected_methods = {
+        "/api/health": {"get"},
+        "/api/incidents": {"get", "post"},
+        "/api/incidents/{incident_id}": {"get"},
+        "/api/incidents/{incident_id}/evidence": {"post"},
+        "/api/incidents/{incident_id}/analyze": {"post"},
+        "/api/incidents/{incident_id}/analysis": {"get"},
+        "/api/incidents/{incident_id}/report.md": {"get"},
+    }
+    assert set(paths) == set(expected_methods)
+    for path, methods in expected_methods.items():
+        assert set(paths[path]) == methods
