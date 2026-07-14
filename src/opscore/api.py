@@ -13,6 +13,7 @@ from opscore.collectors import CollectorRequest, collect_target
 from opscore.models import EvidenceItem, Incident, IncidentAnalysis, IncidentBundle
 from opscore.storage import IncidentStore
 from opscore.ui import render_operator_interface
+from opscore.watch_handoff import WatchHandoff, evidence_from_handoff
 
 
 def create_app(workspace: Path | None = None) -> FastAPI:
@@ -87,6 +88,34 @@ def create_app(workspace: Path | None = None) -> FastAPI:
             )
         collected = collect_target(request)
         updated = bundle.model_copy(update={"evidence": [*bundle.evidence, *collected]})
+        store.save_bundle(updated)
+        return updated
+
+    @application.post(
+        "/api/incidents/{incident_id}/watch-handoff",
+        response_model=IncidentBundle,
+        status_code=status.HTTP_201_CREATED,
+    )
+    def import_watch_handoff(
+        incident_id: str, handoff: WatchHandoff
+    ) -> IncidentBundle:
+        bundle = store.load_bundle(incident_id)
+        if bundle is None:
+            raise HTTPException(status_code=404, detail="incident not found")
+        service_ids = {service.service_id for service in bundle.services}
+        if handoff.target_reference not in service_ids:
+            raise HTTPException(
+                status_code=422,
+                detail="target_reference is not an incident service",
+            )
+        try:
+            imported = evidence_from_handoff(handoff)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        existing_ids = {item.evidence_id for item in bundle.evidence}
+        if any(item.evidence_id in existing_ids for item in imported):
+            raise HTTPException(status_code=409, detail="WATCH run already imported")
+        updated = bundle.model_copy(update={"evidence": [*bundle.evidence, *imported]})
         store.save_bundle(updated)
         return updated
 
