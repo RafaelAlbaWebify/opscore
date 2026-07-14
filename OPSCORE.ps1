@@ -1,6 +1,6 @@
 param(
     [Parameter(Position = 0)]
-    [ValidateSet("setup", "verify", "demo", "correlate", "export")]
+    [ValidateSet("setup", "verify", "demo", "correlate", "ui", "export")]
     [string]$Command = "verify"
 )
 
@@ -12,5 +12,6 @@ switch ($Command) {
     "verify"    { & (Join-Path $Root "scripts\verify.ps1") }
     "demo"      { & (Join-Path $Root "scripts\run-demo.ps1") }
     "correlate" { & (Join-Path $Root "scripts\run-correlation.ps1") }
+    "ui"        { & (Join-Path $Root "scripts\run-ui.ps1") }
     "export"    { & (Join-Path $Root "scripts\export-review.ps1") }
 }
