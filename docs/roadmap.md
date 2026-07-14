@@ -29,7 +29,7 @@
 - [x] Download generated Markdown reports.
 - [x] Keep the local workspace fixed at application startup.
 - [x] Cover the API lifecycle and local persistence with automated tests.
-- [ ] Add explicit OpenAPI schema snapshot regression proof.
+- [x] Lock the public OpenAPI paths and methods with regression proof.
 
 ## M3 — Operator interface
 
