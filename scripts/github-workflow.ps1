@@ -204,8 +204,10 @@ try {
                 }
 
                 if ($WatchExitCode -ne 0 -or $Final.conclusion -ne "success") {
+                    $Downloads = Join-Path $env:USERPROFILE "Downloads"
+                    New-Item -ItemType Directory -Path $Downloads -Force | Out-Null
                     $LogPath = Join-Path `
-                        ([Environment]::GetFolderPath("Desktop")) `
+                        $Downloads `
                         "OPSCORE_CI_FAILED_$RunId.txt"
                     & $Gh run view $RunId --repo $Repo --log-failed |
                         Set-Content -Path $LogPath -Encoding UTF8
