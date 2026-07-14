@@ -1,0 +1,18 @@
+{
+  "run_id": "run-orders-001",
+  "target_id": "orders-public",
+  "started_at": "2026-07-14T08:06:00Z",
+  "finished_at": "2026-07-14T08:06:05Z",
+  "status": "partial",
+  "observations": {
+    "http_status": null,
+    "final_url": "https://orders.example.test",
+    "redirect_count": 0,
+    "redirect_chain": [],
+    "response_ms": null,
+    "tls_days_remaining": 21,
+    "page_title": null,
+    "resolved_ips": ["203.0.113.10"],
+    "errors": ["connection timeout"]
+  }
+}
