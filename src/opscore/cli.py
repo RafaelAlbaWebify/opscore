@@ -8,6 +8,7 @@ from typing import Annotated
 import typer
 
 from opscore.collectors import CollectorRequest, collect_target
+from opscore.connectivity import TcpConnectivityRequest, collect_tcp_connectivity
 from opscore.demo import run_demo
 from opscore.imports import run_import_correlation
 from opscore.watch_handoff import WatchHandoff, evidence_from_handoff
@@ -94,6 +95,38 @@ def collect(
         encoding="utf-8",
     )
     typer.echo("OPSCORE bounded collection PASS")
+    typer.echo(f"Evidence: {output}")
+
+
+@app.command("connectivity")
+def connectivity(
+    host: Annotated[str, typer.Option(help="One explicit hostname or IP address")],
+    port: Annotated[int, typer.Option(min=1, max=65535, help="One explicit TCP port")],
+    target_reference: Annotated[str, typer.Option(help="Incident service ID")],
+    source_location: Annotated[str, typer.Option(help="Operator-defined source location")],
+    timeout_seconds: Annotated[
+        float, typer.Option(min=0.5, max=10.0, help="Connection timeout")
+    ] = 3.0,
+    workspace: Annotated[Path, typer.Option(help="Output workspace")] = Path(
+        ".opscore-data/connectivity"
+    ),
+) -> None:
+    evidence = collect_tcp_connectivity(
+        TcpConnectivityRequest(
+            host=host,
+            port=port,
+            target_reference=target_reference,
+            source_location=source_location,
+            timeout_seconds=timeout_seconds,
+        )
+    )
+    workspace.mkdir(parents=True, exist_ok=True)
+    output = workspace / "tcp-connectivity-evidence.json"
+    output.write_text(
+        json.dumps(evidence.model_dump(mode="json"), indent=2),
+        encoding="utf-8",
+    )
+    typer.echo("OPSCORE bounded TCP connectivity PASS")
     typer.echo(f"Evidence: {output}")
 
 
