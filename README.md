@@ -100,15 +100,15 @@ User-controlled values are escaped before HTML rendering. The interface writes o
 
 ## Developer workflow
 
-After the repository is cloned, future branches can be synchronized and verified from any PowerShell working directory:
+From the repository root, verify a pull-request branch with:
 
 ```powershell
 powershell.exe -NoProfile -ExecutionPolicy Bypass `
-  -File C:\Users\ralba\source\repos\opscore\scripts\github-workflow.ps1 `
+  -File .\scripts\github-workflow.ps1 `
   verify-pr agent/example-branch
 ```
 
-The script performs a normal authenticated push, waits for pull-request CI, prints Linux and Windows job results and saves failed logs to `C:\Users\ralba\Downloads`.
+The script performs a normal authenticated push, waits for pull-request CI, prints Linux and Windows job results and saves failed logs to the current user's Downloads folder.
 
 ## Automated proof
 
