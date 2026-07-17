@@ -32,6 +32,34 @@ COMPATIBILITY_SCRIPT = r"""
     status.textContent = message;
     status.className = `status-${kind}`;
   };
+  const loadAssessment = async (id) => {
+    const preview = document.getElementById("assessment-preview");
+    try {
+      const assessment = await request(`/api/incidents/${id}/assessment`);
+      const hypotheses = assessment.hypotheses.length
+        ? assessment.hypotheses.map((item) =>
+            `${item.hypothesis_id}: ${item.status} — ${item.statement}`
+          ).join("\n")
+        : "No hypotheses recorded.";
+      preview.textContent = [
+        `Assessed by: ${assessment.assessed_by}`,
+        `Assessed at: ${assessment.assessed_at}`,
+        `Conclusion status: ${assessment.root_cause.status}`,
+        `Statement: ${assessment.root_cause.statement || "not stated"}`,
+        `Rationale: ${assessment.root_cause.operator_rationale}`,
+        "",
+        "Hypotheses:",
+        hypotheses,
+      ].join("\n");
+    } catch (error) {
+      if (error.message === "assessment not found") {
+        preview.innerHTML =
+          '<span class="ops-empty">No operator assessment has been recorded for this incident.</span>';
+      } else {
+        preview.textContent = error.message;
+      }
+    }
+  };
 
   loadIncident = async (id) => {
     selectedIncident = id;
@@ -67,15 +95,8 @@ COMPATIBILITY_SCRIPT = r"""
       );
       await loadHistory();
       await loadAnalysis(false);
-      document.getElementById("load-assessment").click();
-      window.setTimeout(() => {
-        const preview = document.getElementById("assessment-preview");
-        if (preview.textContent.includes("assessment not found")) {
-          preview.innerHTML =
-            '<span class="ops-empty">No operator assessment has been recorded for this incident.</span>';
-        }
-        humanizeDates(document.getElementById("workspace"));
-      }, 100);
+      await loadAssessment(id);
+      humanizeDates(document.getElementById("workspace"));
       document.querySelectorAll(".incident").forEach((item) => {
         item.setAttribute("aria-current", String(item.dataset.id === id));
       });
