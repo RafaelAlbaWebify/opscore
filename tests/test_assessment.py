@@ -5,7 +5,12 @@ import pytest
 from pydantic import ValidationError
 
 from opscore.analysis import analyze
-from opscore.assessment import HypothesisAssessment, InvestigationAssessment, RootCauseAssessment, validate_assessment
+from opscore.assessment import (
+    HypothesisAssessment,
+    InvestigationAssessment,
+    RootCauseAssessment,
+    validate_assessment,
+)
 from opscore.demo import load_bundle
 from opscore.models import HypothesisStatus, RootCauseStatus
 
@@ -20,14 +25,16 @@ def test_assessment_accepts_known_references() -> None:
         incident_id=analysis.incident.incident_id,
         assessed_at=datetime(2026, 7, 17, 16, 0, tzinfo=UTC),
         assessed_by="operator",
-        hypotheses=[HypothesisAssessment(
-            hypothesis_id="hyp-application-path",
-            statement="Application path is unavailable after DNS resolution.",
-            status=HypothesisStatus.SUPPORTED,
-            supporting_finding_ids=[finding.finding_id],
-            supporting_evidence_ids=[evidence_id],
-            operator_rationale="The evidence supports continued investigation.",
-        )],
+        hypotheses=[
+            HypothesisAssessment(
+                hypothesis_id="hyp-application-path",
+                statement="Application path is unavailable after DNS resolution.",
+                status=HypothesisStatus.SUPPORTED,
+                supporting_finding_ids=[finding.finding_id],
+                supporting_evidence_ids=[evidence_id],
+                operator_rationale="The evidence supports continued investigation.",
+            )
+        ],
         root_cause=RootCauseAssessment(
             status=RootCauseStatus.SUSPECTED,
             statement="Application-layer availability failure.",
