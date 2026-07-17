@@ -10,6 +10,7 @@ from fastapi.responses import HTMLResponse
 from opscore import __version__
 from opscore.analysis import analyze
 from opscore.assessment import InvestigationAssessment, validate_assessment
+from opscore.assessment_ui import enhance_operator_interface
 from opscore.backup_awareness import (
     BackupAwarenessRecord,
     evidence_from_backup_record,
@@ -32,7 +33,7 @@ def create_app(workspace: Path | None = None) -> FastAPI:
 
     @application.get("/", response_class=HTMLResponse, include_in_schema=False)
     def operator_interface() -> str:
-        return render_operator_interface()
+        return enhance_operator_interface(render_operator_interface())
 
     @application.get("/api/health")
     def health() -> dict[str, str]:
