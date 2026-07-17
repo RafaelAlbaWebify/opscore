@@ -3,15 +3,18 @@ from __future__ import annotations
 
 OPERATIONAL_STYLES = """
 <style id="opscore-operational-styles">
-.operations-overview { margin-bottom: 1rem; }
+.operations-overview,
+.ops-intake { margin-bottom: 1rem; }
 .operations-heading {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 1rem;
 }
-.operations-heading h2 { margin-bottom: .25rem; }
-.operations-heading p { margin: 0; }
+.operations-heading h2,
+.ops-intake h2 { margin-bottom: .25rem; }
+.operations-heading p,
+.ops-intake > p { margin: 0; }
 .ops-eyebrow {
   margin: 0 0 .35rem !important;
   color: var(--ops-blue-700);
@@ -100,13 +103,29 @@ OPERATIONAL_STYLES = """
 .badge-warning { background: var(--ops-warning-100); color: var(--ops-warning-700); }
 .badge-success { background: var(--ops-success-100); color: var(--ops-success-700); }
 .badge-neutral { background: var(--ops-slate-100); color: var(--ops-slate-700); }
+#incident-form-host { margin-top: 1rem; }
+#incident-form-host form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .8rem;
+}
+#incident-form-host label {
+  color: var(--ops-slate-700);
+  font-size: .76rem;
+  font-weight: 750;
+}
+#incident-form-host textarea { min-height: 5.2rem; }
+#incident-form-host button { align-self: end; }
+#form-status { grid-column: 1 / -1; }
 @media (max-width: 1000px) {
-  .ops-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .ops-metrics,
+  #incident-form-host form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 600px) {
   .operations-heading { display: block; }
   .operations-heading button { width: 100%; }
-  .ops-metrics { grid-template-columns: 1fr; }
+  .ops-metrics,
+  #incident-form-host form { grid-template-columns: 1fr; }
 }
 </style>
 """
@@ -152,6 +171,14 @@ OPERATIONAL_OVERVIEW = """
       </tbody>
     </table>
   </div>
+</section>
+<section id="incident-intake" class="ops-intake card">
+  <p class="ops-eyebrow">Validated intake</p>
+  <h2>New incident</h2>
+  <p class="muted">
+    Create a local incident record before collecting or importing evidence.
+  </p>
+  <div id="incident-form-host"></div>
 </section>
 """
 
@@ -209,6 +236,18 @@ OPERATIONAL_SCRIPT = """
     document.getElementById("metric-confirmed").textContent = overviewIncidents
       .filter((item) => item.root_cause_status === "confirmed").length;
     renderRegister();
+  };
+  const formHost = document.getElementById("incident-form-host");
+  formHost.appendChild(document.getElementById("incident-form"));
+  formHost.appendChild(document.getElementById("form-status"));
+  document.querySelectorAll("main > aside h2").forEach((heading) => {
+    if (heading.textContent.trim() === "New incident") heading.remove();
+  });
+  document.querySelector("main > aside hr")?.remove();
+  const refreshSidebarIncidents = refreshIncidents;
+  refreshIncidents = async () => {
+    await refreshSidebarIncidents();
+    await refreshOperationalOverview();
   };
   document.getElementById("incident-search")
     .addEventListener("input", renderRegister);
