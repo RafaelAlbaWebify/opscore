@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from opscore.layout_finish import stabilize_full_page_layout
 from opscore.operational_ui import add_operational_overview
+from opscore.ux_compatibility import apply_ux_compatibility
 from opscore.ux_polish import apply_professional_ux
 from opscore.visual_refresh import apply_trace_aligned_visuals
 
@@ -61,4 +62,5 @@ Select an incident first.</pre>
     with_visuals = apply_trace_aligned_visuals(with_assessment)
     with_overview = add_operational_overview(with_visuals)
     stabilized = stabilize_full_page_layout(with_overview)
-    return apply_professional_ux(stabilized)
+    polished = apply_professional_ux(stabilized)
+    return apply_ux_compatibility(polished)
