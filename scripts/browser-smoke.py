@@ -24,6 +24,7 @@ def exercise_desktop(page: Page, base_url: str, screenshot: Path) -> None:
     page.get_by_role("heading", name="Browser verified incident").wait_for()
     expect(page.locator("#metric-total")).to_have_text("1")
     expect(page.get_by_role("button", name="Create new incident")).to_be_visible()
+    expect(page.get_by_text("No operator assessment has been recorded")).to_be_visible()
 
     analyze_url = f"{base_url}/api/incidents/inc-browser-001/analyze"
     with page.expect_response(lambda response: response.url == analyze_url) as response_info:
@@ -36,11 +37,9 @@ def exercise_desktop(page: Page, base_url: str, screenshot: Path) -> None:
     with page.expect_response(lambda response: response.url == report_url) as report_info:
         page.get_by_role("button", name="Load Markdown report").click()
     assert report_info.value.status == 200
-    page.locator(".report-rendered h4").first.wait_for()
-    expect(page.locator("#report-preview")).to_be_hidden()
     expect(page.locator(".report-rendered")).to_be_visible()
-
-    expect(page.get_by_text("No operator assessment has been recorded")).to_be_visible()
+    expect(page.locator(".report-rendered")).to_contain_text("OPSCORE Incident Evidence Report")
+    expect(page.locator("#report-preview")).to_be_hidden()
     expect(page.locator("#assessment-panel")).to_be_visible()
 
     screenshot.parent.mkdir(parents=True, exist_ok=True)
