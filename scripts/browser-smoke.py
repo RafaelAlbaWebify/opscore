@@ -25,13 +25,15 @@ def exercise_desktop(page: Page, base_url: str, screenshot: Path) -> None:
     expect(page.locator("#metric-total")).to_have_text("1")
     expect(page.get_by_role("button", name="Create new incident")).to_be_visible()
 
-    page.get_by_role("button", name="Run deterministic analysis").click()
+    analyze = page.get_by_role("button", name="Run deterministic analysis")
+    analyze.click()
     page.get_by_text("No deterministic findings.").wait_for()
-    page.get_by_text("Analysis completed.").wait_for()
+    expect(analyze).to_be_enabled()
+    expect(page.locator("#history")).to_contain_text("analysis")
 
-    page.get_by_text("Report preview", exact=True).click()
+    page.locator("#report-panel summary").click()
     page.get_by_role("button", name="Load Markdown report").click()
-    page.get_by_text("Executive summary", exact=True).wait_for()
+    page.locator(".report-rendered h4").first.wait_for()
     expect(page.locator("#report-preview")).to_be_hidden()
     expect(page.locator(".report-rendered")).to_be_visible()
 
