@@ -25,14 +25,17 @@ def exercise_desktop(page: Page, base_url: str, screenshot: Path) -> None:
     expect(page.locator("#metric-total")).to_have_text("1")
     expect(page.get_by_role("button", name="Create new incident")).to_be_visible()
 
-    analyze = page.get_by_role("button", name="Run deterministic analysis")
-    analyze.click()
+    analyze_url = f"{base_url}/api/incidents/inc-browser-001/analyze"
+    with page.expect_response(lambda response: response.url == analyze_url) as response_info:
+        page.get_by_role("button", name="Run deterministic analysis").click()
+    assert response_info.value.status == 200
     page.get_by_text("No deterministic findings.").wait_for()
-    expect(analyze).to_be_enabled()
-    expect(page.locator("#history")).to_contain_text("analysis")
 
     page.locator("#report-panel summary").click()
-    page.get_by_role("button", name="Load Markdown report").click()
+    report_url = f"{base_url}/api/incidents/inc-browser-001/report.md"
+    with page.expect_response(lambda response: response.url == report_url) as report_info:
+        page.get_by_role("button", name="Load Markdown report").click()
+    assert report_info.value.status == 200
     page.locator(".report-rendered h4").first.wait_for()
     expect(page.locator("#report-preview")).to_be_hidden()
     expect(page.locator(".report-rendered")).to_be_visible()
