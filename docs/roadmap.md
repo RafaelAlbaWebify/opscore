@@ -98,9 +98,24 @@
 - [x] Explicit backup-administration and recoverability safety boundary.
 - [x] Complete authoritative Linux and Windows CI proof for the final M7 head.
 
+## M8 — SQLite-backed immutable incident history
+
+- [ ] Local SQLite history database inside the configured workspace.
+- [ ] Immutable bundle revisions for incident creation and change.
+- [ ] Immutable analysis revisions for every explicit analysis run.
+- [ ] Deterministic per-incident revision numbers and timezone-aware timestamps.
+- [ ] Validated full JSON payload retained for every revision.
+- [ ] Existing current JSON bundles, analyses and Markdown reports preserved.
+- [ ] Read-only service methods for revision listing and retrieval.
+- [ ] Bounded read-only incident-history API endpoints.
+- [ ] Read-only operator-interface history visibility.
+- [ ] Automatic database bootstrap without modifying existing incident JSON.
+- [ ] Persistence, immutability, schema, OpenAPI and lifecycle regression tests.
+- [ ] Architecture, API, README, safety and version documentation.
+- [ ] Complete authoritative Linux and Windows CI proof for the final M8 head.
+
 ## Deferred
 
-- SQLite incident history.
 - Hypothesis progression and final RCA workflow.
 
-Automatic remediation, broad scanning and production writes remain out of scope.
+Automatic remediation, broad scanning, history rollback, revision deletion and production writes remain out of scope.
