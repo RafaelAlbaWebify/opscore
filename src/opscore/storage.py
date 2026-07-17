@@ -1,14 +1,21 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 from pathlib import Path
 
+from opscore.history import (
+    IncidentHistoryStore,
+    IncidentRevision,
+    IncidentRevisionMetadata,
+    RevisionType,
+)
 from opscore.models import IncidentAnalysis, IncidentBundle
 from opscore.reports import render_markdown
 
 
 class IncidentStore:
-    """Local JSON persistence for incident bundles and generated analyses."""
+    """Current JSON persistence plus append-only SQLite incident history."""
 
     def __init__(self, workspace: Path) -> None:
         self.workspace = workspace
@@ -17,25 +24,48 @@ class IncidentStore:
         self.reports_dir = workspace / "reports"
         for directory in (self.incidents_dir, self.analyses_dir, self.reports_dir):
             directory.mkdir(parents=True, exist_ok=True)
+        self.history = IncidentHistoryStore(workspace)
 
     def _bundle_path(self, incident_id: str) -> Path:
+        IncidentHistoryStore.validate_incident_id(incident_id)
         return self.incidents_dir / f"{incident_id}.json"
 
     def _analysis_path(self, incident_id: str) -> Path:
+        IncidentHistoryStore.validate_incident_id(incident_id)
         return self.analyses_dir / f"{incident_id}.json"
 
     def _report_path(self, incident_id: str) -> Path:
+        IncidentHistoryStore.validate_incident_id(incident_id)
         return self.reports_dir / f"{incident_id}.md"
+
+    @staticmethod
+    def _write_text_atomic(path: Path, content: str) -> None:
+        temporary = path.with_suffix(f"{path.suffix}.tmp")
+        temporary.write_text(content, encoding="utf-8")
+        temporary.replace(path)
 
     def bundle_exists(self, incident_id: str) -> bool:
         return self._bundle_path(incident_id).exists()
 
     def save_bundle(self, bundle: IncidentBundle) -> Path:
-        path = self._bundle_path(bundle.incident.incident_id)
-        path.write_text(
-            json.dumps(bundle.model_dump(mode="json"), indent=2, sort_keys=True),
-            encoding="utf-8",
-        )
+        incident_id = bundle.incident.incident_id
+        path = self._bundle_path(incident_id)
+        payload = bundle.model_dump(mode="json")
+        serialized = json.dumps(payload, indent=2, sort_keys=True)
+        with self.history._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            try:
+                self.history.append(
+                    incident_id,
+                    RevisionType.BUNDLE,
+                    payload,
+                    connection=connection,
+                )
+                self._write_text_atomic(path, serialized)
+                connection.commit()
+            except Exception:
+                connection.rollback()
+                raise
         return path
 
     def load_bundle(self, incident_id: str) -> IncidentBundle | None:
@@ -53,12 +83,25 @@ class IncidentStore:
     def save_analysis(self, analysis: IncidentAnalysis) -> tuple[Path, Path]:
         incident_id = analysis.incident.incident_id
         analysis_path = self._analysis_path(incident_id)
-        analysis_path.write_text(
-            json.dumps(analysis.model_dump(mode="json"), indent=2, sort_keys=True),
-            encoding="utf-8",
-        )
         report_path = self._report_path(incident_id)
-        report_path.write_text(render_markdown(analysis), encoding="utf-8")
+        payload = analysis.model_dump(mode="json")
+        serialized = json.dumps(payload, indent=2, sort_keys=True)
+        report = render_markdown(analysis)
+        with self.history._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            try:
+                self.history.append(
+                    incident_id,
+                    RevisionType.ANALYSIS,
+                    payload,
+                    connection=connection,
+                )
+                self._write_text_atomic(analysis_path, serialized)
+                self._write_text_atomic(report_path, report)
+                connection.commit()
+            except Exception:
+                connection.rollback()
+                raise
         return analysis_path, report_path
 
     def load_analysis(self, incident_id: str) -> IncidentAnalysis | None:
@@ -72,3 +115,11 @@ class IncidentStore:
         if not path.exists():
             return None
         return path.read_text(encoding="utf-8")
+
+    def list_revisions(self, incident_id: str) -> list[IncidentRevisionMetadata]:
+        return self.history.list_revisions(incident_id)
+
+    def get_revision(
+        self, incident_id: str, revision_number: int
+    ) -> IncidentRevision | None:
+        return self.history.get_revision(incident_id, revision_number)
