@@ -38,7 +38,7 @@
 - [x] Incident list and selection.
 - [x] Service and dependency views.
 - [x] Evidence inventory.
-- [x] Timeline, findings, missing evidence and safe-check views.
+- [x] Timeline, findings, missing evidence and safe next checks.
 - [x] Explicit analysis execution.
 - [x] Markdown report preview.
 - [x] Output escaping for user-controlled values.
@@ -82,12 +82,25 @@
 - [x] Incident API endpoint and service validation.
 - [x] One-off CLI JSON export.
 - [x] Deterministic offline socket tests.
-- [ ] Complete authoritative Linux and Windows CI proof for M6.
+- [x] Complete authoritative Linux and Windows CI proof for M6.
+
+## M7 — Backup-awareness evidence
+
+- [x] Structured operator-supplied backup-awareness contract.
+- [x] Protected, degraded, unprotected and unknown protection states.
+- [x] Timezone-aware successful-backup and restore-test timestamps.
+- [x] Optional RPO, RTO, retention summary and public-safe notes.
+- [x] Source-system and source-location provenance.
+- [x] Protected-status validation requiring successful-backup evidence.
+- [x] Partial evidence for unknown protection state.
+- [x] Incident API endpoint and service validation.
+- [x] OpenAPI, contract and API lifecycle regression tests.
+- [x] Explicit backup-administration and recoverability safety boundary.
+- [ ] Complete authoritative Linux and Windows CI proof for the final M7 head.
 
 ## Deferred
 
 - SQLite incident history.
-- Backup-awareness evidence.
 - Hypothesis progression and final RCA workflow.
 
 Automatic remediation, broad scanning and production writes remain out of scope.
