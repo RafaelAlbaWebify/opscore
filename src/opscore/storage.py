@@ -121,11 +121,25 @@ class IncidentStore:
         return IncidentAnalysis.model_validate_json(path.read_text(encoding="utf-8"))
 
     def save_assessment(self, assessment: InvestigationAssessment) -> Path:
-        path = self._assessment_path(assessment.incident_id)
-        self._write_text_atomic(
-            path,
-            json.dumps(assessment.model_dump(mode="json"), indent=2, sort_keys=True),
-        )
+        incident_id = assessment.incident_id
+        path = self._assessment_path(incident_id)
+        payload = assessment.model_dump(mode="json")
+        serialized = json.dumps(payload, indent=2, sort_keys=True)
+        with self.history._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            try:
+                self.history.append(
+                    incident_id,
+                    RevisionType.ASSESSMENT,
+                    payload,
+                    created_at=assessment.assessed_at,
+                    connection=connection,
+                )
+                self._write_text_atomic(path, serialized)
+                connection.commit()
+            except Exception:
+                connection.rollback()
+                raise
         return path
 
     def load_assessment(self, incident_id: str) -> InvestigationAssessment | None:
