@@ -15,9 +15,9 @@ def render_markdown(
         "# OPSCORE Incident Evidence Report",
         "",
         (
-            "> Findings reflect the evidence available to this investigation. "
-            "Operator assessments are recorded separately and are never generated "
-            "or promoted automatically."
+            "> Findings reflect the evidence available to this investigation and "
+            "do not confirm root cause. Operator assessments are recorded separately "
+            "and are never generated or promoted automatically."
         ),
         "",
         "## Executive summary",
