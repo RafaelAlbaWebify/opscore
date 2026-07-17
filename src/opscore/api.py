@@ -15,6 +15,7 @@ from opscore.backup_awareness import (
 )
 from opscore.collectors import CollectorRequest, collect_target
 from opscore.connectivity import TcpConnectivityRequest, collect_tcp_connectivity
+from opscore.history import IncidentRevision, IncidentRevisionMetadata
 from opscore.models import EvidenceItem, Incident, IncidentAnalysis, IncidentBundle
 from opscore.storage import IncidentStore
 from opscore.ui import render_operator_interface
@@ -58,6 +59,34 @@ def create_app(workspace: Path | None = None) -> FastAPI:
         if bundle is None:
             raise HTTPException(status_code=404, detail="incident not found")
         return bundle
+
+    @application.get(
+        "/api/incidents/{incident_id}/history",
+        response_model=list[IncidentRevisionMetadata],
+    )
+    def list_incident_history(incident_id: str) -> list[IncidentRevisionMetadata]:
+        try:
+            revisions = store.list_revisions(incident_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        if not revisions and not store.bundle_exists(incident_id):
+            raise HTTPException(status_code=404, detail="incident not found")
+        return revisions
+
+    @application.get(
+        "/api/incidents/{incident_id}/history/{revision_number}",
+        response_model=IncidentRevision,
+    )
+    def get_incident_revision(
+        incident_id: str, revision_number: int
+    ) -> IncidentRevision:
+        try:
+            revision = store.get_revision(incident_id, revision_number)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        if revision is None:
+            raise HTTPException(status_code=404, detail="revision not found")
+        return revision
 
     @application.post(
         "/api/incidents/{incident_id}/evidence",
