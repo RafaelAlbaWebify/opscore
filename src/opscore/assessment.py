@@ -40,7 +40,9 @@ class RootCauseAssessment(BaseModel):
             if not self.supporting_evidence_ids:
                 raise ValueError("confirmed root cause requires supporting evidence")
             if self.unresolved_required_evidence:
-                raise ValueError("confirmed root cause cannot retain unresolved required evidence")
+                raise ValueError(
+                    "confirmed root cause cannot retain unresolved required evidence"
+                )
         return self
 
 
@@ -67,7 +69,10 @@ class InvestigationAssessment(BaseModel):
         return self
 
 
-def validate_assessment(assessment: InvestigationAssessment, analysis: IncidentAnalysis) -> None:
+def validate_assessment(
+    assessment: InvestigationAssessment,
+    analysis: IncidentAnalysis,
+) -> None:
     if assessment.incident_id != analysis.incident.incident_id:
         raise ValueError("assessment incident does not match analysis")
     finding_ids = {item.finding_id for item in analysis.findings}
