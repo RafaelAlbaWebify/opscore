@@ -1,16 +1,20 @@
 from __future__ import annotations
 
+from opscore.layout_finish import stabilize_full_page_layout
+from opscore.operational_ui import add_operational_overview
+from opscore.visual_refresh import apply_trace_aligned_visuals
+
 
 def enhance_operator_interface(html: str) -> str:
-    """Add a read-only assessment panel without coupling it to core UI rendering."""
+    """Add assessment visibility and apply the shared portfolio visual language."""
     panel = """
-      <section
-        id="assessment-panel"
-        style="border-top:1px solid #26314d;padding:24px;"
-      >
+      <section id="assessment-panel">
         <div class="card">
           <h2>Operator assessment</h2>
-          <p class="muted">Explicit operator hypotheses and conclusion status.</p>
+          <p class="muted">
+            Explicit operator hypotheses and conclusion status, kept separate
+            from deterministic findings.
+          </p>
           <button id="load-assessment" class="secondary">
             Load current assessment
           </button>
@@ -52,4 +56,7 @@ Select an incident first.</pre>
           });
       </script>
     """
-    return html.replace("</body>", f"{panel}</body>")
+    with_assessment = html.replace("</body>", f"{panel}</body>")
+    with_visuals = apply_trace_aligned_visuals(with_assessment)
+    with_overview = add_operational_overview(with_visuals)
+    return stabilize_full_page_layout(with_overview)
