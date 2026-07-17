@@ -60,6 +60,38 @@ def test_incident_api_lifecycle(tmp_path: Path) -> None:
     assert analyzed.json()["incident"]["root_cause_status"] == "unassessed"
     assert client.get("/api/incidents/inc-orders-001/analysis").json() == analyzed.json()
 
+    finding = analyzed.json()["findings"][0]
+    assessment = {
+        "incident_id": "inc-orders-001",
+        "assessed_at": "2026-07-17T16:00:00Z",
+        "assessed_by": "operator",
+        "hypotheses": [{
+            "hypothesis_id": "hyp-application-path",
+            "statement": "Application path is unavailable after DNS resolution.",
+            "status": "supported",
+            "supporting_finding_ids": [finding["finding_id"]],
+            "contradicting_finding_ids": [],
+            "supporting_evidence_ids": [finding["supporting_evidence_ids"][0]],
+            "contradicting_evidence_ids": [],
+            "required_evidence": ["server-side service state"],
+            "operator_rationale": "The current evidence supports investigation.",
+        }],
+        "root_cause": {
+            "status": "suspected",
+            "statement": "Application-layer availability failure.",
+            "supporting_finding_ids": [finding["finding_id"]],
+            "contradicting_finding_ids": [],
+            "supporting_evidence_ids": [finding["supporting_evidence_ids"][0]],
+            "contradicting_evidence_ids": [],
+            "unresolved_required_evidence": ["server-side service state"],
+            "limitations": ["Server-side evidence not yet collected."],
+            "operator_rationale": "This is not a confirmed root cause.",
+        },
+    }
+    saved = client.put("/api/incidents/inc-orders-001/assessment", json=assessment)
+    assert saved.status_code == 200
+    assert client.get("/api/incidents/inc-orders-001/assessment").json() == saved.json()
+
     report = client.get("/api/incidents/inc-orders-001/report.md")
     assert report.status_code == 200
     assert report.headers["content-type"].startswith("text/markdown")
@@ -103,6 +135,7 @@ def test_incident_api_not_found(tmp_path: Path) -> None:
     assert client.get("/api/incidents/inc-missing").status_code == 404
     assert client.get("/api/incidents/inc-missing/history").status_code == 404
     assert client.get("/api/incidents/inc-missing/history/1").status_code == 404
+    assert client.get("/api/incidents/inc-missing/assessment").status_code == 404
     assert client.post("/api/incidents/inc-missing/analyze").status_code == 404
     assert client.post(
         "/api/incidents/inc-missing/collect",
@@ -165,6 +198,7 @@ def test_openapi_incident_contract(tmp_path: Path) -> None:
         "/api/incidents/{incident_id}/watch-handoff": {"post"},
         "/api/incidents/{incident_id}/analyze": {"post"},
         "/api/incidents/{incident_id}/analysis": {"get"},
+        "/api/incidents/{incident_id}/assessment": {"get", "put"},
         "/api/incidents/{incident_id}/report.md": {"get"},
     }
     assert set(paths) == set(expected_methods)
