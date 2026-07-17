@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from opscore.layout_finish import stabilize_full_page_layout
 from opscore.operational_ui import add_operational_overview
 from opscore.visual_refresh import apply_trace_aligned_visuals
 
@@ -57,4 +58,5 @@ Select an incident first.</pre>
     """
     with_assessment = html.replace("</body>", f"{panel}</body>")
     with_visuals = apply_trace_aligned_visuals(with_assessment)
-    return add_operational_overview(with_visuals)
+    with_overview = add_operational_overview(with_visuals)
+    return stabilize_full_page_layout(with_overview)
