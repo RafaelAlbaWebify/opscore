@@ -11,6 +11,7 @@ from opscore.collectors import CollectorRequest, collect_target
 from opscore.connectivity import TcpConnectivityRequest, collect_tcp_connectivity
 from opscore.demo import run_demo
 from opscore.imports import run_import_correlation
+from opscore.storage import IncidentStore
 from opscore.watch_handoff import WatchHandoff, evidence_from_handoff
 
 app = typer.Typer(help="OPSCORE infrastructure incident evidence workbench")
@@ -151,6 +152,35 @@ def validate_watch_handoff(
     typer.echo("OPSCORE WATCH handoff PASS")
     typer.echo(f"Contract: {handoff.contract_version}")
     typer.echo(f"Evidence: {output}")
+
+
+@app.command("history")
+def history(
+    incident_id: Annotated[str, typer.Argument(help="Incident identifier")],
+    workspace: Annotated[Path, typer.Option(help="OPSCORE workspace")] = Path(
+        ".opscore-data/api"
+    ),
+    revision: Annotated[
+        int | None,
+        typer.Option(min=1, help="Optional revision number to retrieve"),
+    ] = None,
+) -> None:
+    """Show read-only immutable incident revision history as JSON."""
+    store = IncidentStore(workspace)
+    try:
+        if revision is None:
+            payload = [
+                item.model_dump(mode="json")
+                for item in store.list_revisions(incident_id)
+            ]
+        else:
+            item = store.get_revision(incident_id, revision)
+            if item is None:
+                raise typer.BadParameter("revision not found", param_hint="--revision")
+            payload = item.model_dump(mode="json")
+    except ValueError as exc:
+        raise typer.BadParameter(str(exc), param_hint="incident_id") from exc
+    typer.echo(json.dumps(payload, indent=2, sort_keys=True))
 
 
 if __name__ == "__main__":
