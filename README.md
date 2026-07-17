@@ -119,7 +119,7 @@ An analysis must exist before an assessment can be saved. OPSCORE does not gener
 
 ## Operator workbench
 
-The local interface provides validated incident intake, incident selection, service and dependency views, evidence inventory, immutable history, deterministic analysis, timelines, findings, missing evidence, safe checks and Markdown report preview. Operator assessment visibility is part of the M9 interface completion work.
+The local interface provides validated incident intake, incident selection, service and dependency views, evidence inventory, immutable history, deterministic analysis, timelines, findings, missing evidence, safe checks, Markdown report preview and a read-only panel for the current operator assessment.
 
 User-controlled values are escaped before HTML rendering. The interface writes only to the configured local OPSCORE workspace.
 
