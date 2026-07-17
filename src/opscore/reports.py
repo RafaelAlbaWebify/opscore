@@ -2,18 +2,22 @@ from __future__ import annotations
 
 import json
 
+from opscore.assessment import InvestigationAssessment
 from opscore.models import IncidentAnalysis
 
 
-def render_markdown(analysis: IncidentAnalysis) -> str:
+def render_markdown(
+    analysis: IncidentAnalysis,
+    assessment: InvestigationAssessment | None = None,
+) -> str:
     incident = analysis.incident
     lines = [
         "# OPSCORE Incident Evidence Report",
         "",
         (
-            "> Findings reflect the evidence available to this investigation. They do not "
-            "confirm root cause unless explicitly marked as confirmed and linked to "
-            "sufficient supporting evidence."
+            "> Findings reflect the evidence available to this investigation. "
+            "Operator assessments are recorded separately and are never generated "
+            "or promoted automatically."
         ),
         "",
         "## Executive summary",
@@ -22,7 +26,6 @@ def render_markdown(analysis: IncidentAnalysis) -> str:
         f"- Environment: `{incident.environment}`",
         f"- Severity: **{incident.severity.value}**",
         f"- Status: **{incident.status.value}**",
-        f"- Root-cause status: **{incident.root_cause_status.value}**",
         "",
         "## Reported symptom",
         "",
@@ -57,7 +60,7 @@ def render_markdown(analysis: IncidentAnalysis) -> str:
             f"- {event.timestamp.isoformat()} — **{event.event_type}** — "
             f"{event.summary}"
         )
-    lines.extend(["", "## Evidence findings", ""])
+    lines.extend(["", "## Deterministic evidence findings", ""])
     if not analysis.findings:
         lines.append("- No deterministic findings were generated from the available evidence.")
     for finding in analysis.findings:
@@ -85,15 +88,60 @@ def render_markdown(analysis: IncidentAnalysis) -> str:
         if finding.non_actions:
             lines.append(f"- Non-actions: {'; '.join(finding.non_actions)}")
         lines.append("")
+
+    lines.extend(["## Operator investigation assessment", ""])
+    if assessment is None:
+        lines.append("- No operator assessment has been recorded.")
+    else:
+        lines.extend(
+            [
+                f"- Assessed at: {assessment.assessed_at.isoformat()}",
+                f"- Assessed by: {assessment.assessed_by}",
+                f"- Root-cause status: **{assessment.root_cause.status.value}**",
+                (
+                    "- Root-cause statement: "
+                    f"{assessment.root_cause.statement or 'not stated'}"
+                ),
+                f"- Operator rationale: {assessment.root_cause.operator_rationale}",
+            ]
+        )
+        if assessment.root_cause.supporting_evidence_ids:
+            lines.append(
+                "- Supporting evidence: "
+                + ", ".join(assessment.root_cause.supporting_evidence_ids)
+            )
+        if assessment.root_cause.unresolved_required_evidence:
+            lines.append(
+                "- Unresolved required evidence: "
+                + ", ".join(assessment.root_cause.unresolved_required_evidence)
+            )
+        if assessment.root_cause.limitations:
+            lines.append(
+                "- Assessment limitations: "
+                + "; ".join(assessment.root_cause.limitations)
+            )
+        lines.extend(["", "### Hypotheses", ""])
+        if not assessment.hypotheses:
+            lines.append("- No hypotheses recorded.")
+        for hypothesis in assessment.hypotheses:
+            lines.extend(
+                [
+                    f"- `{hypothesis.hypothesis_id}` — **{hypothesis.status.value}** — "
+                    f"{hypothesis.statement}",
+                    f"  - Rationale: {hypothesis.operator_rationale}",
+                ]
+            )
+
     lines.extend(
         [
+            "",
             "## Limitations",
             "",
-            "- M2 uses sanitized local and imported evidence only.",
-            "- No external systems were queried or modified.",
+            "- OPSCORE uses sanitized local and imported evidence only.",
+            "- No external systems were modified.",
             (
-                "- Findings are deterministic evidence statements, not automatic "
-                "root-cause declarations."
+                "- Findings are deterministic evidence statements; operator "
+                "assessment is explicit and separately identified."
             ),
             "",
             "## Evidence provenance",
