@@ -95,7 +95,7 @@ def render_operator_interface() -> str:
             <h1>OPSCORE Operator Workbench</h1>
             <p>
               Local-first incident evidence, deterministic findings,
-              and safe next checks.
+              immutable history, and safe next checks.
             </p>
           </header>
           <main>
@@ -147,7 +147,7 @@ Users cannot reach the service.</textarea>
             <section>
               <div id="empty-state" class="card">
                 Select an incident to inspect services, dependencies,
-                evidence, timeline, findings, gaps, and report.
+                evidence, immutable history, timeline, findings, gaps, and report.
               </div>
               <div id="workspace" hidden>
                 <div class="grid">
@@ -167,6 +167,14 @@ Users cannot reach the service.</textarea>
                   <article class="card wide">
                     <h3>Evidence inventory</h3>
                     <ul id="evidence"></ul>
+                  </article>
+                  <article class="card wide">
+                    <h3>Immutable incident history</h3>
+                    <p class="muted">
+                      Read-only bundle and analysis revisions. OPSCORE provides no restore,
+                      rollback, edit, or delete action for historical revisions.
+                    </p>
+                    <ul id="history"></ul>
                   </article>
                   <article class="card">
                     <h3>Timeline</h3>
@@ -260,7 +268,24 @@ Run analysis before loading a report.</pre>
                   · ${escapeHtml(item.source_system)}
                   · ${escapeHtml(item.collected_at)}`,
               );
+              await loadHistory();
               await loadAnalysis(false);
+            }
+            async function loadHistory() {
+              if (!selectedIncident) return;
+              try {
+                const revisions = await request(
+                  `/api/incidents/${selectedIncident}/history`,
+                );
+                el("history").innerHTML = listItems(
+                  revisions,
+                  (item) => `<strong>Revision ${escapeHtml(item.revision_number)}</strong>
+                    · ${escapeHtml(item.revision_type)}
+                    · ${escapeHtml(item.created_at)}`,
+                );
+              } catch (error) {
+                el("history").innerHTML = `<li class='muted'>${escapeHtml(error.message)}</li>`;
+              }
             }
             async function loadAnalysis(run) {
               if (!selectedIncident) return;
@@ -298,6 +323,7 @@ Run analysis before loading a report.</pre>
                       </p>
                     </div>`).join("")
                   : "<p class='muted'>No deterministic findings.</p>";
+                if (run) await loadHistory();
               } catch (error) {
                 el("timeline").innerHTML =
                   "<li class='muted'>Analysis not generated.</li>";

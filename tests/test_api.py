@@ -101,6 +101,8 @@ def test_bounded_collection_endpoint(tmp_path: Path, monkeypatch: pytest.MonkeyP
 def test_incident_api_not_found(tmp_path: Path) -> None:
     client = TestClient(create_app(tmp_path))
     assert client.get("/api/incidents/inc-missing").status_code == 404
+    assert client.get("/api/incidents/inc-missing/history").status_code == 404
+    assert client.get("/api/incidents/inc-missing/history/1").status_code == 404
     assert client.post("/api/incidents/inc-missing/analyze").status_code == 404
     assert client.post(
         "/api/incidents/inc-missing/collect",
@@ -154,6 +156,8 @@ def test_openapi_incident_contract(tmp_path: Path) -> None:
         "/api/health": {"get"},
         "/api/incidents": {"get", "post"},
         "/api/incidents/{incident_id}": {"get"},
+        "/api/incidents/{incident_id}/history": {"get"},
+        "/api/incidents/{incident_id}/history/{revision_number}": {"get"},
         "/api/incidents/{incident_id}/evidence": {"post"},
         "/api/incidents/{incident_id}/collect": {"post"},
         "/api/incidents/{incident_id}/connectivity": {"post"},

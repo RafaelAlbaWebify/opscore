@@ -11,6 +11,8 @@ OPSCORE is read-only first.
 - Collect DNS, HTTP and TLS evidence for one explicitly supplied HTTP or HTTPS URL.
 - Apply a fixed timeout and record the operator-defined collection source location.
 - Preserve failed bounded operations as partial evidence.
+- Append local immutable bundle and analysis revisions to the configured workspace.
+- List and retrieve historical revision metadata and validated JSON payloads without changing state.
 
 ## Not allowed without explicit design and approval
 
@@ -22,10 +24,14 @@ OPSCORE is read-only first.
 - Claim confirmed root cause from incomplete evidence.
 - Automatically remediate production infrastructure.
 - Bypass authentication, rate limits or access controls.
+- Restore, roll back, rewrite or delete incident-history revisions.
+- Connect to a production database or external history service.
 
 ## Evidence rule
 
 Observations are not automatically findings. Findings are not automatically root causes. A confirmed root cause must be explicitly supported by sufficient evidence and must expose contradictory or missing evidence.
+
+Historical revisions prove only what OPSCORE stored at a point in the local investigation workflow. They do not independently prove that the source evidence was complete, correct, or sufficient to establish root cause.
 
 ## Public repository rule
 
