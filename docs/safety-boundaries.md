@@ -11,7 +11,9 @@ OPSCORE is read-only first.
 - Collect DNS, HTTP and TLS evidence for one explicitly supplied HTTP or HTTPS URL.
 - Apply a fixed timeout and record the operator-defined collection source location.
 - Preserve failed bounded operations as partial evidence.
-- Append local immutable bundle and analysis revisions to the configured workspace.
+- Record explicit operator hypotheses and root-cause assessments.
+- Validate assessment references against the current persisted incident analysis.
+- Append local immutable bundle, analysis and assessment revisions.
 - List and retrieve historical revision metadata and validated JSON payloads without changing state.
 
 ## Not allowed without explicit design and approval
@@ -21,17 +23,21 @@ OPSCORE is read-only first.
 - Crawl links, enumerate neighboring hosts or scan port ranges.
 - Follow redirects automatically during live collection.
 - Store credentials, tokens or private client data.
+- Generate hypotheses automatically.
+- Infer or promote root-cause status automatically.
 - Claim confirmed root cause from incomplete evidence.
 - Automatically remediate production infrastructure.
 - Bypass authentication, rate limits or access controls.
 - Restore, roll back, rewrite or delete incident-history revisions.
 - Connect to a production database or external history service.
 
-## Evidence rule
+## Evidence and assessment rule
 
-Observations are not automatically findings. Findings are not automatically root causes. A confirmed root cause must be explicitly supported by sufficient evidence and must expose contradictory or missing evidence.
+Observations are not automatically findings. Findings are not automatically hypotheses or root causes. Hypotheses and root-cause assessments require explicit operator input.
 
-Historical revisions prove only what OPSCORE stored at a point in the local investigation workflow. They do not independently prove that the source evidence was complete, correct, or sufficient to establish root cause.
+A confirmed root-cause record requires an explicit statement, supporting evidence and no unresolved required-evidence entries. This validates the record structure; it does not independently prove that the operator conclusion is correct.
+
+Historical revisions prove only what OPSCORE stored at a point in the local investigation workflow. They do not independently prove that source evidence was complete, correct or sufficient.
 
 ## Public repository rule
 
