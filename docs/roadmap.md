@@ -112,7 +112,7 @@
 - [x] Automatic database bootstrap without modifying existing incident JSON.
 - [x] Persistence, immutability, schema, CLI, OpenAPI and lifecycle regression tests.
 - [x] Architecture, API, README, safety and version documentation.
-- [ ] Complete authoritative Linux and Windows CI proof for the final M8 head.
+- [x] Complete authoritative Linux and Windows CI proof for the final M8 implementation head.
 
 ## Deferred
 
