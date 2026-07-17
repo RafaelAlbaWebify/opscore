@@ -10,11 +10,13 @@ main > aside {
   height: auto;
   min-height: 100vh;
 }
+#assessment-panel { margin-left: var(--ops-sidebar-width); }
 @media (max-width: 850px) {
   main > aside {
     position: static;
     min-height: 0;
   }
+  #assessment-panel { margin-left: 0; }
 }
 </style>
 """
