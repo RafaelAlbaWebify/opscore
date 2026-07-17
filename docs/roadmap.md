@@ -38,7 +38,7 @@
 - [x] Incident list and selection.
 - [x] Service and dependency views.
 - [x] Evidence inventory.
-- [x] Timeline, findings, missing evidence and safe next checks.
+- [x] Timeline, findings, missing evidence and safe-check views.
 - [x] Explicit analysis execution.
 - [x] Markdown report preview.
 - [x] Output escaping for user-controlled values.
@@ -96,7 +96,7 @@
 - [x] Incident API endpoint and service validation.
 - [x] OpenAPI, contract and API lifecycle regression tests.
 - [x] Explicit backup-administration and recoverability safety boundary.
-- [ ] Complete authoritative Linux and Windows CI proof for the final M7 head.
+- [x] Complete authoritative Linux and Windows CI proof for the final M7 head.
 
 ## Deferred
 
