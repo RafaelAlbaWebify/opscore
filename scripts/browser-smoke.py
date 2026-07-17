@@ -20,7 +20,7 @@ def exercise_desktop(page: Page, base_url: str, screenshot: Path) -> None:
     page.get_by_label("Service name").fill("Browser service")
     page.get_by_role("button", name="Create incident").click()
 
-    page.get_by_text("Incident created.").wait_for()
+    page.get_by_text("Incident created and opened.").wait_for()
     page.get_by_role("heading", name="Browser verified incident").wait_for()
     expect(page.locator("#metric-total")).to_have_text("1")
     expect(page.get_by_role("button", name="Create new incident")).to_be_visible()
