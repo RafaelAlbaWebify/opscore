@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from opscore.operational_ui import add_operational_overview
 from opscore.visual_refresh import apply_trace_aligned_visuals
 
 
@@ -54,5 +55,6 @@ Select an incident first.</pre>
           });
       </script>
     """
-    enhanced = html.replace("</body>", f"{panel}</body>")
-    return apply_trace_aligned_visuals(enhanced)
+    with_assessment = html.replace("</body>", f"{panel}</body>")
+    with_overview = add_operational_overview(with_assessment)
+    return apply_trace_aligned_visuals(with_overview)
