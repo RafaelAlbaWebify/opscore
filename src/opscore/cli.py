@@ -167,6 +167,7 @@ def history(
 ) -> None:
     """Show read-only immutable incident revision history as JSON."""
     store = IncidentStore(workspace)
+    payload: object
     try:
         if revision is None:
             payload = [
