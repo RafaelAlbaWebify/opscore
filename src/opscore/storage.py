@@ -96,7 +96,7 @@ class IncidentStore:
         report_path = self._report_path(incident_id)
         payload = analysis.model_dump(mode="json")
         serialized = json.dumps(payload, indent=2, sort_keys=True)
-        report = render_markdown(analysis)
+        report = render_markdown(analysis, self.load_assessment(incident_id))
         with self.history._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
             try:
@@ -125,6 +125,7 @@ class IncidentStore:
         path = self._assessment_path(incident_id)
         payload = assessment.model_dump(mode="json")
         serialized = json.dumps(payload, indent=2, sort_keys=True)
+        analysis = self.load_analysis(incident_id)
         with self.history._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
             try:
@@ -136,6 +137,11 @@ class IncidentStore:
                     connection=connection,
                 )
                 self._write_text_atomic(path, serialized)
+                if analysis is not None:
+                    self._write_text_atomic(
+                        self._report_path(incident_id),
+                        render_markdown(analysis, assessment),
+                    )
                 connection.commit()
             except Exception:
                 connection.rollback()
