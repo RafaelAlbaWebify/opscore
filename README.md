@@ -2,7 +2,7 @@
 
 > Infrastructure and production operations incident evidence workbench.
 
-OPSCORE is a local-first, read-only workbench for correlating infrastructure and production-service evidence around an incident. It imports public-safe DNS Audit Tool CSV evidence and versioned WATCH handoffs, performs bounded single-target DNS/HTTP/TLS and TCP-connectivity checks, records operator-supplied backup-awareness context, normalizes source provenance, applies deterministic correlation rules, and presents support-ready findings, timelines, missing evidence, safe next checks, and reports through an API, CLI, and local operator interface.
+OPSCORE **v0.8.0** is a local-first, read-only workbench for correlating infrastructure and production-service evidence around an incident. It imports public-safe DNS Audit Tool CSV evidence and versioned WATCH handoffs, performs bounded single-target DNS/HTTP/TLS and TCP-connectivity checks, records operator-supplied backup-awareness context, normalizes source provenance, applies deterministic correlation rules, preserves immutable incident revisions, and presents support-ready findings, timelines, missing evidence, safe next checks, and reports through an API, CLI, and local operator interface.
 
 ## Portfolio purpose
 
@@ -28,8 +28,9 @@ incident and service context
 → normalized evidence
 → cross-source correlation
 → timeline, findings and missing evidence
-→ local incident persistence and bounded API
-→ operator workbench and Markdown/JSON reports
+→ current local JSON and Markdown outputs
+→ immutable SQLite bundle and analysis revisions
+→ API, CLI and operator workbench visibility
 ```
 
 Current deterministic findings include:
@@ -40,7 +41,7 @@ Current deterministic findings include:
 - TLS certificate expiry risk;
 - missing evidence for required dependencies.
 
-OPSCORE does not claim root cause unless the available evidence explicitly supports that conclusion. Backup-awareness metadata does not independently prove recoverability or restore success.
+OPSCORE does not claim root cause unless the available evidence explicitly supports that conclusion. Backup-awareness metadata does not independently prove recoverability or restore success. Historical revisions prove only what OPSCORE stored locally at a point in the investigation workflow.
 
 ## Quick start
 
@@ -66,8 +67,12 @@ python -m opscore.cli connectivity --host example.test --port 443 `
   --target-reference service-web --source-location operator-laptop
 python -m opscore.cli watch-handoff `
   --handoff-file samples/imports/watch-handoff-v1.json
+python -m opscore.cli history inc-orders-001 `
+  --workspace .opscore-data\api
 python -m uvicorn opscore.api:app --host 127.0.0.1 --port 8000
 ```
+
+Use `--revision 1` with the history command to retrieve one complete immutable revision payload.
 
 ## WATCH handoff
 
@@ -96,6 +101,22 @@ M7 records structured backup-awareness metadata supplied by an operator for one 
 
 OPSCORE does not connect to backup platforms, control jobs, change schedules or retention, perform restores, or infer recoverability from this metadata. See `docs/backup-awareness.md`.
 
+## Immutable incident history
+
+M8 adds a local SQLite database named `incident-history.sqlite3` inside the configured workspace.
+
+OPSCORE records:
+
+- one immutable bundle revision whenever a validated incident bundle is created or changed;
+- one immutable analysis revision whenever analysis is explicitly run;
+- deterministic per-incident revision numbers;
+- timezone-aware UTC creation timestamps;
+- the complete validated JSON payload for every revision.
+
+Existing current bundle JSON, analysis JSON and Markdown report files remain available. History listing and retrieval are read-only through service methods, API endpoints, the CLI and the operator workbench. OPSCORE provides no restore, rollback, edit or delete controls for historical revisions.
+
+See `docs/incident-history.md`.
+
 ## Operator workbench
 
 The local interface provides:
@@ -104,6 +125,7 @@ The local interface provides:
 - incident list and selection;
 - service and dependency views;
 - evidence inventory;
+- read-only immutable incident history;
 - explicit deterministic analysis;
 - timeline, findings, missing evidence and safe next checks;
 - Markdown report preview.
@@ -134,12 +156,13 @@ The repository is configured to run on Linux and Windows:
 - WATCH handoff contract and duplicate-run tests;
 - bounded collector and TCP-connectivity safety tests;
 - backup-awareness contract and API lifecycle tests;
+- SQLite history persistence, immutability, CLI and API tests;
 - PowerShell operator verification;
 - Playwright browser workflow with a screenshot artifact;
 - review artifact generation.
 
 ## Safety boundary
 
-OPSCORE is read-only first. It does not modify DNS, certificates, services, backup platforms, remote systems or production infrastructure. Public repository data must remain synthetic or sanitized.
+OPSCORE is read-only first. It does not modify DNS, certificates, services, backup platforms, remote systems or production infrastructure. It does not restore, roll back, rewrite or delete incident-history revisions. Public repository data must remain synthetic or sanitized.
 
 See `docs/safety-boundaries.md` for the full boundary.
