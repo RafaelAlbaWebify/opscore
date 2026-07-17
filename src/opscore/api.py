@@ -9,6 +9,8 @@ from fastapi.responses import HTMLResponse
 
 from opscore import __version__
 from opscore.analysis import analyze
+from opscore.assessment import InvestigationAssessment, validate_assessment
+from opscore.assessment_ui import enhance_operator_interface
 from opscore.backup_awareness import (
     BackupAwarenessRecord,
     evidence_from_backup_record,
@@ -31,7 +33,7 @@ def create_app(workspace: Path | None = None) -> FastAPI:
 
     @application.get("/", response_class=HTMLResponse, include_in_schema=False)
     def operator_interface() -> str:
-        return render_operator_interface()
+        return enhance_operator_interface(render_operator_interface())
 
     @application.get("/api/health")
     def health() -> dict[str, str]:
@@ -222,6 +224,36 @@ def create_app(workspace: Path | None = None) -> FastAPI:
         if analysis is None:
             raise HTTPException(status_code=404, detail="analysis not found")
         return analysis
+
+    @application.put(
+        "/api/incidents/{incident_id}/assessment",
+        response_model=InvestigationAssessment,
+    )
+    def save_incident_assessment(
+        incident_id: str,
+        assessment: InvestigationAssessment,
+    ) -> InvestigationAssessment:
+        if assessment.incident_id != incident_id:
+            raise HTTPException(status_code=422, detail="assessment incident mismatch")
+        analysis = store.load_analysis(incident_id)
+        if analysis is None:
+            raise HTTPException(status_code=409, detail="analysis required before assessment")
+        try:
+            validate_assessment(assessment, analysis)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        store.save_assessment(assessment)
+        return assessment
+
+    @application.get(
+        "/api/incidents/{incident_id}/assessment",
+        response_model=InvestigationAssessment,
+    )
+    def get_incident_assessment(incident_id: str) -> InvestigationAssessment:
+        assessment = store.load_assessment(incident_id)
+        if assessment is None:
+            raise HTTPException(status_code=404, detail="assessment not found")
+        return assessment
 
     @application.get("/api/incidents/{incident_id}/report.md")
     def get_report(incident_id: str) -> Response:

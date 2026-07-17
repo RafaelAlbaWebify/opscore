@@ -114,8 +114,19 @@
 - [x] Architecture, API, README, safety and version documentation.
 - [x] Complete authoritative Linux and Windows CI proof for the final M8 implementation head.
 
-## Deferred
+## M9 — Evidence-backed hypothesis and RCA workflow
 
-- Hypothesis progression and final RCA workflow.
+- [x] Explicit hypothesis and root-cause assessment contracts.
+- [x] Timezone-aware operator identity and rationale fields.
+- [x] Confirmed root-cause guard requiring supporting evidence and no unresolved gaps.
+- [x] Validation against existing incident finding and evidence identifiers.
+- [x] Current local assessment persistence.
+- [x] Immutable assessment revisions integrated with M8 history.
+- [x] Bounded assessment create/update and read API endpoints.
+- [x] Operator-interface hypothesis and root-cause visibility.
+- [x] Report integration that keeps deterministic findings separate from operator assessment.
+- [x] Persistence, migration, API, OpenAPI and lifecycle regression tests.
+- [x] Architecture, API, README, safety and version documentation.
+- [x] Complete authoritative Linux and Windows CI proof for the final M9 head.
 
-Automatic remediation, broad scanning, history rollback, revision deletion and production writes remain out of scope.
+Automatic hypothesis generation, root-cause inference, remediation, broad scanning, history rollback, revision deletion and production writes remain out of scope.

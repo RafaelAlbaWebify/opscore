@@ -16,6 +16,7 @@ _INCIDENT_ID = re.compile(r"^inc-[a-z0-9-]+$")
 class RevisionType(StrEnum):
     BUNDLE = "bundle"
     ANALYSIS = "analysis"
+    ASSESSMENT = "assessment"
 
 
 class IncidentRevisionMetadata(BaseModel):
@@ -39,7 +40,7 @@ class IncidentRevision(IncidentRevisionMetadata):
 
 
 class IncidentHistoryStore:
-    """Append-only SQLite history for validated incident and analysis payloads."""
+    """Append-only SQLite history for validated incident payloads."""
 
     def __init__(self, workspace: Path) -> None:
         workspace.mkdir(parents=True, exist_ok=True)
@@ -51,28 +52,72 @@ class IncidentHistoryStore:
         connection.row_factory = sqlite3.Row
         return connection
 
+    @staticmethod
+    def _create_schema(connection: sqlite3.Connection) -> None:
+        connection.execute(
+            """
+            CREATE TABLE incident_revisions (
+                incident_id TEXT NOT NULL,
+                revision_number INTEGER NOT NULL,
+                revision_type TEXT NOT NULL CHECK (
+                    revision_type IN ('bundle', 'analysis', 'assessment')
+                ),
+                created_at TEXT NOT NULL,
+                payload_json TEXT NOT NULL,
+                PRIMARY KEY (incident_id, revision_number)
+            )
+            """
+        )
+        connection.execute(
+            """
+            CREATE INDEX idx_incident_revisions_type
+            ON incident_revisions (incident_id, revision_type, revision_number)
+            """
+        )
+
     def _bootstrap(self) -> None:
         with self._connect() as connection:
-            connection.execute(
+            row = connection.execute(
                 """
-                CREATE TABLE IF NOT EXISTS incident_revisions (
-                    incident_id TEXT NOT NULL,
-                    revision_number INTEGER NOT NULL,
-                    revision_type TEXT NOT NULL CHECK (
-                        revision_type IN ('bundle', 'analysis')
-                    ),
-                    created_at TEXT NOT NULL,
-                    payload_json TEXT NOT NULL,
-                    PRIMARY KEY (incident_id, revision_number)
+                SELECT sql FROM sqlite_master
+                WHERE type = 'table' AND name = 'incident_revisions'
+                """
+            ).fetchone()
+            if row is None:
+                self._create_schema(connection)
+                return
+            schema_sql = str(row["sql"] or "")
+            if "'assessment'" in schema_sql:
+                connection.execute(
+                    """
+                    CREATE INDEX IF NOT EXISTS idx_incident_revisions_type
+                    ON incident_revisions (incident_id, revision_type, revision_number)
+                    """
                 )
-                """
-            )
-            connection.execute(
-                """
-                CREATE INDEX IF NOT EXISTS idx_incident_revisions_type
-                ON incident_revisions (incident_id, revision_type, revision_number)
-                """
-            )
+                return
+            connection.execute("BEGIN IMMEDIATE")
+            try:
+                connection.execute(
+                    "ALTER TABLE incident_revisions RENAME TO incident_revisions_m8"
+                )
+                connection.execute("DROP INDEX IF EXISTS idx_incident_revisions_type")
+                self._create_schema(connection)
+                connection.execute(
+                    """
+                    INSERT INTO incident_revisions (
+                        incident_id, revision_number, revision_type,
+                        created_at, payload_json
+                    )
+                    SELECT incident_id, revision_number, revision_type,
+                           created_at, payload_json
+                    FROM incident_revisions_m8
+                    """
+                )
+                connection.execute("DROP TABLE incident_revisions_m8")
+                connection.commit()
+            except Exception:
+                connection.rollback()
+                raise
 
     @staticmethod
     def validate_incident_id(incident_id: str) -> None:

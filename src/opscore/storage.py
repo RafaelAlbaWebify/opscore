@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from opscore.assessment import InvestigationAssessment
 from opscore.history import (
     IncidentHistoryStore,
     IncidentRevision,
@@ -20,8 +21,14 @@ class IncidentStore:
         self.workspace = workspace
         self.incidents_dir = workspace / "incidents"
         self.analyses_dir = workspace / "analyses"
+        self.assessments_dir = workspace / "assessments"
         self.reports_dir = workspace / "reports"
-        for directory in (self.incidents_dir, self.analyses_dir, self.reports_dir):
+        for directory in (
+            self.incidents_dir,
+            self.analyses_dir,
+            self.assessments_dir,
+            self.reports_dir,
+        ):
             directory.mkdir(parents=True, exist_ok=True)
         self.history = IncidentHistoryStore(workspace)
 
@@ -32,6 +39,10 @@ class IncidentStore:
     def _analysis_path(self, incident_id: str) -> Path:
         IncidentHistoryStore.validate_incident_id(incident_id)
         return self.analyses_dir / f"{incident_id}.json"
+
+    def _assessment_path(self, incident_id: str) -> Path:
+        IncidentHistoryStore.validate_incident_id(incident_id)
+        return self.assessments_dir / f"{incident_id}.json"
 
     def _report_path(self, incident_id: str) -> Path:
         IncidentHistoryStore.validate_incident_id(incident_id)
@@ -85,7 +96,7 @@ class IncidentStore:
         report_path = self._report_path(incident_id)
         payload = analysis.model_dump(mode="json")
         serialized = json.dumps(payload, indent=2, sort_keys=True)
-        report = render_markdown(analysis)
+        report = render_markdown(analysis, self.load_assessment(incident_id))
         with self.history._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
             try:
@@ -108,6 +119,40 @@ class IncidentStore:
         if not path.exists():
             return None
         return IncidentAnalysis.model_validate_json(path.read_text(encoding="utf-8"))
+
+    def save_assessment(self, assessment: InvestigationAssessment) -> Path:
+        incident_id = assessment.incident_id
+        path = self._assessment_path(incident_id)
+        payload = assessment.model_dump(mode="json")
+        serialized = json.dumps(payload, indent=2, sort_keys=True)
+        analysis = self.load_analysis(incident_id)
+        with self.history._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
+            try:
+                self.history.append(
+                    incident_id,
+                    RevisionType.ASSESSMENT,
+                    payload,
+                    created_at=assessment.assessed_at,
+                    connection=connection,
+                )
+                self._write_text_atomic(path, serialized)
+                if analysis is not None:
+                    self._write_text_atomic(
+                        self._report_path(incident_id),
+                        render_markdown(analysis, assessment),
+                    )
+                connection.commit()
+            except Exception:
+                connection.rollback()
+                raise
+        return path
+
+    def load_assessment(self, incident_id: str) -> InvestigationAssessment | None:
+        path = self._assessment_path(incident_id)
+        if not path.exists():
+            return None
+        return InvestigationAssessment.model_validate_json(path.read_text(encoding="utf-8"))
 
     def load_report(self, incident_id: str) -> str | None:
         path = self._report_path(incident_id)
