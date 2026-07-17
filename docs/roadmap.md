@@ -123,7 +123,7 @@
 - [x] Current local assessment persistence.
 - [x] Immutable assessment revisions integrated with M8 history.
 - [x] Bounded assessment create/update and read API endpoints.
-- [ ] Operator-interface hypothesis and root-cause visibility.
+- [x] Operator-interface hypothesis and root-cause visibility.
 - [x] Report integration that keeps deterministic findings separate from operator assessment.
 - [x] Persistence, migration, API, OpenAPI and lifecycle regression tests.
 - [x] Architecture, API, README, safety and version documentation.
