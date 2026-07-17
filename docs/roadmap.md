@@ -100,18 +100,18 @@
 
 ## M8 — SQLite-backed immutable incident history
 
-- [ ] Local SQLite history database inside the configured workspace.
-- [ ] Immutable bundle revisions for incident creation and change.
-- [ ] Immutable analysis revisions for every explicit analysis run.
-- [ ] Deterministic per-incident revision numbers and timezone-aware timestamps.
-- [ ] Validated full JSON payload retained for every revision.
-- [ ] Existing current JSON bundles, analyses and Markdown reports preserved.
-- [ ] Read-only service methods for revision listing and retrieval.
-- [ ] Bounded read-only incident-history API endpoints.
-- [ ] Read-only operator-interface history visibility.
-- [ ] Automatic database bootstrap without modifying existing incident JSON.
-- [ ] Persistence, immutability, schema, OpenAPI and lifecycle regression tests.
-- [ ] Architecture, API, README, safety and version documentation.
+- [x] Local SQLite history database inside the configured workspace.
+- [x] Immutable bundle revisions for incident creation and change.
+- [x] Immutable analysis revisions for every explicit analysis run.
+- [x] Deterministic per-incident revision numbers and timezone-aware timestamps.
+- [x] Validated full JSON payload retained for every revision.
+- [x] Existing current JSON bundles, analyses and Markdown reports preserved.
+- [x] Read-only service methods for revision listing and retrieval.
+- [x] Bounded read-only incident-history API endpoints.
+- [x] Read-only operator-interface history visibility.
+- [x] Automatic database bootstrap without modifying existing incident JSON.
+- [x] Persistence, immutability, schema, CLI, OpenAPI and lifecycle regression tests.
+- [x] Architecture, API, README, safety and version documentation.
 - [ ] Complete authoritative Linux and Windows CI proof for the final M8 head.
 
 ## Deferred
