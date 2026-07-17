@@ -16,6 +16,14 @@ The API uses one startup-configured local workspace. Request parameters cannot s
 - `POST /api/incidents/{incident_id}/analyze`
 - `GET /api/incidents/{incident_id}/analysis`
 - `GET /api/incidents/{incident_id}/report.md`
+- `GET /api/incidents/{incident_id}/history`
+- `GET /api/incidents/{incident_id}/history/{revision_number}`
+
+## Incident history
+
+`GET /api/incidents/{incident_id}/history` returns ordered metadata for immutable bundle and analysis revisions. `GET /api/incidents/{incident_id}/history/{revision_number}` returns one revision and its complete validated JSON payload.
+
+History endpoints are read-only. They do not restore, roll back, edit, delete or promote any revision. Revision identifiers are bounded positive integers, incident identifiers use the existing OPSCORE contract, and the application workspace remains fixed at startup. See `docs/incident-history.md`.
 
 ## Bounded collection
 
@@ -53,6 +61,8 @@ The endpoint rejects unknown contract versions, target references outside the in
 - Backup-awareness metadata is not treated as independent proof of backup success, restore success or recoverability.
 - Duplicate WATCH run imports return HTTP 409 without modifying the incident.
 - Analysis is explicit; adding, collecting or importing evidence does not run correlation.
-- Bundles, analyses and reports are stored as local JSON and Markdown files.
+- Bundles, analyses and reports remain available as local JSON and Markdown current-state files.
+- Successful bundle and explicit analysis saves append immutable SQLite history revisions.
+- History reads do not alter current files or database state.
 - The API performs no DNS, certificate, service, backup-platform or external-system writes.
 - Root-cause status remains evidence-controlled and is not automatically promoted.
