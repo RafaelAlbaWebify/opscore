@@ -127,6 +127,6 @@
 - [x] Report integration that keeps deterministic findings separate from operator assessment.
 - [x] Persistence, migration, API, OpenAPI and lifecycle regression tests.
 - [x] Architecture, API, README, safety and version documentation.
-- [ ] Complete authoritative Linux and Windows CI proof for the final M9 head.
+- [x] Complete authoritative Linux and Windows CI proof for the final M9 head.
 
 Automatic hypothesis generation, root-cause inference, remediation, broad scanning, history rollback, revision deletion and production writes remain out of scope.
