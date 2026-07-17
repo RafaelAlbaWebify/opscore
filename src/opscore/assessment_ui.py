@@ -56,5 +56,5 @@ Select an incident first.</pre>
       </script>
     """
     with_assessment = html.replace("</body>", f"{panel}</body>")
-    with_overview = add_operational_overview(with_assessment)
-    return apply_trace_aligned_visuals(with_overview)
+    with_visuals = apply_trace_aligned_visuals(with_assessment)
+    return add_operational_overview(with_visuals)
