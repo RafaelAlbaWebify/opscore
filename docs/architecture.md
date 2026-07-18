@@ -33,7 +33,15 @@ Deterministic analysis and operator assessment are separate layers. `analysis.py
 - `history.py`: append-only SQLite revision metadata and payload storage.
 - `storage.py`: current JSON/report files plus immutable revision recording.
 - `demo.py` and `imports.py`: vertical workflow orchestration.
-- `cli.py`, `api.py` and `ui.py`: operator interfaces.
+- `cli.py` and `api.py`: command-line and HTTP operator interfaces.
+- `ui.py`: base server-rendered operator-interface HTML and core interaction script.
+- `assessment_ui.py`: interface composition entry point that adds assessment visibility and applies the presentation pipeline.
+- `visual_refresh.py` and `operational_ui.py`: TRACE-aligned visual shell, operational summary, incident register and main-workspace intake.
+- `layout_finish.py`: full-page and responsive layout stabilization.
+- `ux_polish.py` and `ux_compatibility.py`: progressive disclosure, task navigation, accessible feedback and compatibility-preserving interaction enhancements.
+- `professional_finish.py`: final report formatting, responsive presentation and verified interaction-state fixes.
+
+The FastAPI root route renders the base interface from `ui.py` and passes it through `assessment_ui.enhance_operator_interface()`, which applies the presentation modules in a fixed order. These modules enhance presentation and interaction while preserving the incident-domain and API behavior.
 
 Collectors must not persist state, render reports or declare root cause. Correlation rules must reference evidence and expose limitations. Assessment status changes require explicit operator input.
 
