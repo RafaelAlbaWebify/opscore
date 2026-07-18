@@ -6,6 +6,15 @@ from pathlib import Path
 from playwright.sync_api import Page, expect, sync_playwright
 
 
+def settle_visual_state(page: Page) -> None:
+    expect(page.get_by_role("button", name="Run deterministic analysis")).to_be_enabled()
+    expect(page.get_by_role("button", name="Run deterministic analysis")).to_have_text(
+        "Run deterministic analysis"
+    )
+    expect(page.locator(".ops-toast")).to_have_count(0, timeout=5000)
+    page.evaluate("document.activeElement?.blur()")
+
+
 def exercise_desktop(page: Page, base_url: str, screenshot: Path) -> None:
     page.goto(base_url, wait_until="networkidle")
     page.get_by_role("heading", name="OPSCORE Operator Workbench").wait_for()
@@ -37,11 +46,15 @@ def exercise_desktop(page: Page, base_url: str, screenshot: Path) -> None:
     with page.expect_response(lambda response: response.url == report_url) as report_info:
         page.get_by_role("button", name="Load Markdown report").click()
     assert report_info.value.status == 200
-    expect(page.locator(".report-rendered")).to_be_visible()
-    expect(page.locator(".report-rendered")).to_contain_text("OPSCORE Incident Evidence Report")
+    report = page.locator(".report-rendered")
+    expect(report).to_be_visible()
+    expect(report).to_contain_text("OPSCORE Incident Evidence Report")
+    expect(report).not_to_contain_text("**")
+    expect(report).not_to_contain_text("# OPSCORE")
     expect(page.locator("#report-preview")).to_be_hidden()
     expect(page.locator("#assessment-panel")).to_be_visible()
 
+    settle_visual_state(page)
     screenshot.parent.mkdir(parents=True, exist_ok=True)
     page.screenshot(path=str(screenshot), full_page=True)
 
@@ -52,6 +65,11 @@ def exercise_narrow(page: Page, base_url: str, screenshot: Path) -> None:
     expect(page.get_by_role("navigation", name="Active incident workflow")).to_be_visible()
     expect(page.get_by_role("button", name="Create new incident")).to_be_visible()
     expect(page.locator(".incident-register-wrap")).to_be_visible()
+    page.locator(".incident").first.click()
+    page.get_by_role("heading", name="Browser verified incident").wait_for()
+    expect(page.locator("#workspace")).to_be_visible()
+    expect(page.locator("#assessment-panel")).to_be_visible()
+    page.evaluate("document.activeElement?.blur()")
     page.screenshot(path=str(screenshot), full_page=True)
 
 
