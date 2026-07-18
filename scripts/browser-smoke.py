@@ -13,12 +13,16 @@ def record(screenshot: Path, stage: str) -> None:
         handle.write(f"{stage}\n")
 
 
-def settle_visual_state(page: Page) -> None:
-    expect(page.get_by_role("button", name="Run deterministic analysis")).to_be_enabled()
-    expect(page.get_by_role("button", name="Run deterministic analysis")).to_have_text(
-        "Run deterministic analysis"
-    )
-    expect(page.locator(".ops-toast")).to_have_count(0, timeout=5000)
+def settle_visual_state(page: Page, screenshot: Path) -> None:
+    page.wait_for_timeout(4000)
+    record(screenshot, "desktop:settle-wait-complete")
+    analyze = page.locator("#analyze")
+    expect(analyze).to_be_enabled()
+    record(screenshot, "desktop:analyze-enabled")
+    expect(analyze).to_have_text("Run deterministic analysis")
+    record(screenshot, "desktop:analyze-label-restored")
+    expect(page.locator(".ops-toast")).to_have_count(0)
+    record(screenshot, "desktop:toast-cleared")
     page.evaluate("document.activeElement?.blur()")
 
 
@@ -67,7 +71,7 @@ def exercise_desktop(page: Page, base_url: str, screenshot: Path) -> None:
     expect(page.locator("#assessment-panel")).to_be_visible()
     record(screenshot, "desktop:report-rendered")
 
-    settle_visual_state(page)
+    settle_visual_state(page, screenshot)
     record(screenshot, "desktop:settled")
     screenshot.parent.mkdir(parents=True, exist_ok=True)
     page.screenshot(path=str(screenshot), full_page=True)
