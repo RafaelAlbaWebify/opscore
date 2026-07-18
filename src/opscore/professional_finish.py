@@ -4,10 +4,17 @@ from __future__ import annotations
 FINISH_STYLES = """
 <style id="opscore-professional-finish">
 .skip-link {
-  top: -10rem;
+  top: .75rem;
+  opacity: 0;
+  pointer-events: none;
   translate: none;
+  visibility: hidden;
 }
-.skip-link:focus { top: .75rem; }
+.skip-link:focus {
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+}
 #workspace > .grid > #assessment-panel {
   grid-column: 1 / -1;
   width: 100%;
@@ -20,6 +27,13 @@ FINISH_STYLES = """
   overflow-x: hidden;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
+}
+#assessment-preview .ops-empty {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 .report-rendered h2 {
   margin: 0 0 .8rem;
