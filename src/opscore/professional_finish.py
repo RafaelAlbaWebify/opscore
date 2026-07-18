@@ -111,6 +111,19 @@ FINISH_SCRIPT = r"""
     source.hidden = true;
   };
 
+  const verifiedLoadAnalysis = loadAnalysis;
+  loadAnalysis = async (run) => {
+    try {
+      return await verifiedLoadAnalysis(run);
+    } finally {
+      if (run) {
+        const analyze = document.getElementById("analyze");
+        analyze.disabled = false;
+        analyze.textContent = "Run deterministic analysis";
+      }
+    }
+  };
+
   new MutationObserver(renderProfessionalReport).observe(source, {
     childList: true,
     characterData: true,
