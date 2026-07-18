@@ -2,11 +2,14 @@ from __future__ import annotations
 
 from opscore.layout_finish import stabilize_full_page_layout
 from opscore.operational_ui import add_operational_overview
+from opscore.professional_finish import apply_professional_finish
+from opscore.ux_compatibility import apply_ux_compatibility
+from opscore.ux_polish import apply_professional_ux
 from opscore.visual_refresh import apply_trace_aligned_visuals
 
 
 def enhance_operator_interface(html: str) -> str:
-    """Add assessment visibility and apply the shared portfolio visual language."""
+    """Add assessment visibility and apply the portfolio interface layers."""
     panel = """
       <section id="assessment-panel">
         <div class="card">
@@ -59,4 +62,7 @@ Select an incident first.</pre>
     with_assessment = html.replace("</body>", f"{panel}</body>")
     with_visuals = apply_trace_aligned_visuals(with_assessment)
     with_overview = add_operational_overview(with_visuals)
-    return stabilize_full_page_layout(with_overview)
+    stabilized = stabilize_full_page_layout(with_overview)
+    polished = apply_professional_ux(stabilized)
+    compatible = apply_ux_compatibility(polished)
+    return apply_professional_finish(compatible)
