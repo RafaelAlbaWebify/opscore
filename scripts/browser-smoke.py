@@ -24,6 +24,9 @@ def settle_visual_state(page: Page, screenshot: Path) -> None:
     expect(page.locator(".ops-toast")).to_have_count(0)
     record(screenshot, "desktop:toast-cleared")
     page.evaluate("document.activeElement?.blur()")
+    page.evaluate("window.scrollTo({top: 0, left: 0, behavior: 'instant'})")
+    page.wait_for_timeout(250)
+    record(screenshot, "desktop:scroll-reset")
 
 
 def exercise_desktop(page: Page, base_url: str, screenshot: Path) -> None:
