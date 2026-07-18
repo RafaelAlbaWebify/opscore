@@ -3,11 +3,22 @@ from __future__ import annotations
 
 FINISH_STYLES = """
 <style id="opscore-professional-finish">
+.skip-link {
+  top: -10rem;
+  translate: none;
+}
+.skip-link:focus { top: .75rem; }
 #workspace > .grid > #assessment-panel {
   grid-column: 1 / -1;
   width: 100%;
+  min-width: 0;
 }
 #workspace > .grid > #assessment-panel pre {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-wrap: anywhere;
   white-space: pre-wrap;
 }
 .report-rendered h2 {
