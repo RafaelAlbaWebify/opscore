@@ -9,6 +9,7 @@ OPSCORE is read-only first.
 - Normalize, correlate and report evidence locally.
 - Identify contradictions, missing evidence and safe next checks.
 - Collect DNS, HTTP and TLS evidence for one explicitly supplied HTTP or HTTPS URL.
+- Perform one bounded read-only TCP connection attempt against one explicitly supplied hostname or IP address and one explicit port, without sending application data, reading a banner or enumerating other targets.
 - Apply a fixed timeout and record the operator-defined collection source location.
 - Preserve failed bounded operations as partial evidence.
 - Record explicit operator hypotheses and root-cause assessments.
