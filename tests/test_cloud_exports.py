@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from opscore.adapters.cloud_exports import import_aws_ec2_export, import_azure_vm_export
+from opscore.adapters.cloud_exports import import_azure_vm_export, import_aws_ec2_export
 
 
 SAMPLES = Path("samples/imports")
