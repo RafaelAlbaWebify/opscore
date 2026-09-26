@@ -196,6 +196,86 @@ def _tls_findings(evidence: list[EvidenceItem]) -> list[Finding]:
     ]
 
 
+
+def _cloud_findings(evidence: list[EvidenceItem]) -> list[Finding]:
+    findings: list[Finding] = []
+    for item in evidence:
+        if item.evidence_type not in {"cloud-vm-state", "cloud-instance-state"}:
+            continue
+        provider = str(item.normalized_data.get("provider", "cloud")).upper()
+        network = str(item.normalized_data.get("network_reachability", "")).lower()
+        health = str(item.normalized_data.get("resource_health", "")).lower()
+        status_check = str(item.normalized_data.get("status_check", "")).lower()
+        cpu = item.normalized_data.get("cpu_percent")
+        disk = item.normalized_data.get("disk_free_percent")
+
+        if network in {"failed", "unreachable", "false"}:
+            findings.append(
+                _finding(
+                    f"{provider}_NETWORK_REVIEW_REQUIRED",
+                    f"{provider} evidence reports failed network reachability.",
+                    FindingSeverity.CRITICAL,
+                    Confidence.HIGH,
+                    [item.evidence_id],
+                    missing=["effective network-policy and route context", "DNS context"],
+                    checks=[
+                        "Review effective network controls, routes and DNS before recovery action."
+                    ],
+                    non_actions=[
+                        "Do not restart or reconfigure the resource solely from reachability evidence."
+                    ],
+                )
+            )
+        if health and health not in {"available", "unknown", "none"}:
+            findings.append(
+                _finding(
+                    "AZURE_RESOURCE_HEALTH_REVIEW_REQUIRED",
+                    "Azure Resource Health evidence is not Available.",
+                    FindingSeverity.CRITICAL,
+                    Confidence.HIGH,
+                    [item.evidence_id],
+                    checks=["Review Resource Health details and platform-event context."],
+                )
+            )
+        if status_check and status_check not in {"ok", "passed", "unknown", "none"}:
+            findings.append(
+                _finding(
+                    "AWS_STATUS_CHECK_REVIEW_REQUIRED",
+                    "AWS status-check evidence is not healthy.",
+                    FindingSeverity.CRITICAL,
+                    Confidence.HIGH,
+                    [item.evidence_id],
+                    checks=[
+                        "Separate system-status and instance-status evidence before recovery action."
+                    ],
+                )
+            )
+        if isinstance(cpu, (int, float)) and cpu >= 85:
+            findings.append(
+                _finding(
+                    f"{provider}_HIGH_CPU",
+                    f"{provider} evidence reports sustained high CPU in the imported snapshot.",
+                    FindingSeverity.WARNING,
+                    Confidence.MEDIUM,
+                    [item.evidence_id],
+                    checks=["Correlate resource pressure with workload and timeline evidence."],
+                )
+            )
+        if isinstance(disk, (int, float)) and disk <= 10:
+            findings.append(
+                _finding(
+                    f"{provider}_LOW_DISK",
+                    f"{provider} evidence reports low free disk capacity.",
+                    FindingSeverity.CRITICAL,
+                    Confidence.HIGH,
+                    [item.evidence_id],
+                    checks=["Validate filesystem usage and growth before resizing or deleting data."],
+                    non_actions=["Do not delete data solely from this finding."],
+                )
+            )
+    return findings
+
+
 def _dependency_findings(bundle: IncidentBundle) -> list[Finding]:
     evidence_targets = {item.target_reference for item in bundle.evidence}
     missing_dependencies = [
@@ -238,6 +318,7 @@ def analyze(
     findings.extend(_http_dns_findings(bundle.evidence))
     findings.extend(_dns_audit_findings(bundle.evidence))
     findings.extend(_tls_findings(bundle.evidence))
+    findings.extend(_cloud_findings(bundle.evidence))
     findings.extend(_dependency_findings(bundle))
     return IncidentAnalysis(
         incident=bundle.incident,
