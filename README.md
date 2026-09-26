@@ -18,7 +18,7 @@ Infrastructure incidents rarely fail because a single command is unavailable. Th
 OPSCORE provides one controlled workspace for:
 
 - preserving incident and service context;
-- importing sanitized DNS Audit Tool CSV and WATCH v1 handoffs;
+- importing sanitized DNS Audit Tool CSV, WATCH v1 handoffs and public-safe Azure/AWS operational exports;
 - running bounded single-target DNS, HTTP, TLS and TCP-connectivity checks;
 - validating evidence provenance;
 - producing deterministic cross-source findings;
@@ -54,11 +54,24 @@ OPSCORE never generates hypotheses or promotes root-cause status automatically. 
 - Timeline, findings, missing-evidence guidance and safe-check suggestions.
 - Current JSON and Markdown outputs for local review.
 
+### Cloud evidence correlation
+
+OPSCORE can import public-safe or synthetic Azure VM and AWS EC2 operational exports, convert them into the same evidence contract and correlate them with incident context.
+
+```powershell
+opscore cloud-correlate --provider azure --export-file samples/imports/azure-vm-export-sample.json --target-reference orders-web
+opscore cloud-correlate --provider aws --export-file samples/imports/aws-ec2-export-sample.json --target-reference orders-web
+```
+
+Current deterministic cloud findings cover network reachability, Azure Resource Health, AWS status checks, high CPU and low disk capacity. These imports are intentionally offline: OPSCORE does not connect to Azure/AWS accounts, provision resources or perform remediation.
+
 ### Bounded evidence collection
 
 - One explicit URL for DNS, HTTP and TLS collection.
 - One explicit host and port for TCP-connectivity evidence.
 - No network-range scanning, crawling, neighboring-host discovery or response-body retention.
+- Cloud imports use redacted/public-safe exports or synthetic fixtures only.
+- No Azure/AWS credentials, live account scanning, provisioning or remediation.
 
 ### Evidence correlation
 
