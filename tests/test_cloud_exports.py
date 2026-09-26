@@ -6,7 +6,7 @@ from opscore.adapters import cloud_exports
 SAMPLES = Path("samples/imports")
 
 
-def test_cloud_exports.import_azure_vm_export() -> None:
+def test_import_azure_vm_export() -> None:
     evidence = cloud_exports.import_azure_vm_export(
         SAMPLES / "azure-vm-export-sample.json", target_reference="orders-web"
     )
@@ -16,7 +16,7 @@ def test_cloud_exports.import_azure_vm_export() -> None:
     assert evidence[0].collected_at.tzinfo is not None
 
 
-def test_cloud_exports.import_aws_ec2_export() -> None:
+def test_import_aws_ec2_export() -> None:
     evidence = cloud_exports.import_aws_ec2_export(
         SAMPLES / "aws-ec2-export-sample.json", target_reference="orders-web"
     )
