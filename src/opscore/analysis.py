@@ -222,7 +222,8 @@ def _cloud_findings(evidence: list[EvidenceItem]) -> list[Finding]:
                         "Review effective network controls, routes and DNS before recovery action."
                     ],
                     non_actions=[
-                        "Do not restart or reconfigure the resource solely from reachability evidence."
+                        "Do not restart or reconfigure the resource solely from "
+                        "reachability evidence."
                     ],
                 )
             )
@@ -246,7 +247,8 @@ def _cloud_findings(evidence: list[EvidenceItem]) -> list[Finding]:
                     Confidence.HIGH,
                     [item.evidence_id],
                     checks=[
-                        "Separate system-status and instance-status evidence before recovery action."
+                        "Separate system-status and instance-status evidence before "
+                        "recovery action."
                     ],
                 )
             )
@@ -269,7 +271,9 @@ def _cloud_findings(evidence: list[EvidenceItem]) -> list[Finding]:
                     FindingSeverity.CRITICAL,
                     Confidence.HIGH,
                     [item.evidence_id],
-                    checks=["Validate filesystem usage and growth before resizing or deleting data."],
+                    checks=[
+                        "Validate filesystem usage and growth before resizing or deleting data."
+                    ],
                     non_actions=["Do not delete data solely from this finding."],
                 )
             )
