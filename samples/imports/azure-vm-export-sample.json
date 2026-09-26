@@ -1,0 +1,20 @@
+[
+  {
+    "vmName": "az-orders-01",
+    "powerState": "running",
+    "resourceHealth": "available",
+    "networkReachability": "failed",
+    "cpuPercent": 24,
+    "diskFreePercent": 48,
+    "collectedAt": "2026-09-26T09:00:00Z"
+  },
+  {
+    "vmName": "az-worker-01",
+    "powerState": "running",
+    "resourceHealth": "available",
+    "networkReachability": "ok",
+    "cpuPercent": 91,
+    "diskFreePercent": 8,
+    "collectedAt": "2026-09-26T09:00:00Z"
+  }
+]
