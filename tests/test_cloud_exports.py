@@ -1,13 +1,13 @@
 from pathlib import Path
 
-from opscore.adapters.cloud_exports import import_azure_vm_export, import_aws_ec2_export
+from opscore.adapters import cloud_exports
 
 
 SAMPLES = Path("samples/imports")
 
 
-def test_import_azure_vm_export() -> None:
-    evidence = import_azure_vm_export(
+def test_cloud_exports.import_azure_vm_export() -> None:
+    evidence = cloud_exports.import_azure_vm_export(
         SAMPLES / "azure-vm-export-sample.json", target_reference="orders-web"
     )
     assert len(evidence) == 2
@@ -16,8 +16,8 @@ def test_import_azure_vm_export() -> None:
     assert evidence[0].collected_at.tzinfo is not None
 
 
-def test_import_aws_ec2_export() -> None:
-    evidence = import_aws_ec2_export(
+def test_cloud_exports.import_aws_ec2_export() -> None:
+    evidence = cloud_exports.import_aws_ec2_export(
         SAMPLES / "aws-ec2-export-sample.json", target_reference="orders-web"
     )
     assert len(evidence) == 2
