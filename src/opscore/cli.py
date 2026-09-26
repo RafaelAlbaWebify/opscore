@@ -10,7 +10,7 @@ import typer
 from opscore.collectors import CollectorRequest, collect_target
 from opscore.connectivity import TcpConnectivityRequest, collect_tcp_connectivity
 from opscore.demo import run_demo
-from opscore.imports import run_import_correlation
+from opscore.imports import run_cloud_import_correlation, run_import_correlation
 from opscore.storage import IncidentStore
 from opscore.watch_handoff import WatchHandoff, evidence_from_handoff
 
@@ -66,6 +66,35 @@ def correlate(
         workspace=workspace,
     )
     typer.echo("OPSCORE import correlation PASS")
+    typer.echo(f"Markdown: {markdown_path}")
+    typer.echo(f"JSON: {json_path}")
+
+
+
+@app.command("cloud-correlate")
+def cloud_correlate(
+    provider: Annotated[str, typer.Option(help="Cloud provider: azure or aws")],
+    export_file: Annotated[Path, typer.Option(help="Public-safe Azure/AWS JSON export")],
+    target_reference: Annotated[str, typer.Option(help="OPSCORE service ID")],
+    workspace: Annotated[Path, typer.Option(help="Output workspace")] = Path(
+        ".opscore-data/cloud"
+    ),
+    base_bundle: Annotated[Path, typer.Option(help="Incident and service context JSON")] = Path(
+        "samples/incidents/orders-service-unavailable.json"
+    ),
+) -> None:
+    """Import public-safe Azure/AWS evidence and correlate it with incident context."""
+    provider = provider.lower().strip()
+    if provider not in {"azure", "aws"}:
+        raise typer.BadParameter("provider must be azure or aws", param_hint="--provider")
+    markdown_path, json_path = run_cloud_import_correlation(
+        base_bundle,
+        provider=provider,
+        export_path=export_file,
+        target_reference=target_reference,
+        workspace=workspace,
+    )
+    typer.echo("OPSCORE cloud correlation PASS")
     typer.echo(f"Markdown: {markdown_path}")
     typer.echo(f"JSON: {json_path}")
 
