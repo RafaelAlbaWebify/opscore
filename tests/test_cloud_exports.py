@@ -2,7 +2,6 @@ from pathlib import Path
 
 from opscore.adapters import cloud_exports
 
-
 SAMPLES = Path("samples/imports")
 
 
