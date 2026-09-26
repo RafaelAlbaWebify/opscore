@@ -4,6 +4,7 @@ import json
 from datetime import datetime
 from pathlib import Path
 
+from opscore.adapters.cloud_exports import import_aws_ec2_export, import_azure_vm_export
 from opscore.adapters.dns_audit import import_dns_audit_csv
 from opscore.adapters.watch_run import import_watch_run
 from opscore.analysis import analyze
@@ -67,4 +68,31 @@ def run_import_correlation(
     (workspace / "import-manifest.json").write_text(
         json.dumps(manifest, indent=2), encoding="utf-8"
     )
+    return markdown_path, json_path
+
+
+def run_cloud_import_correlation(
+    base_bundle_path: Path,
+    *,
+    provider: str,
+    export_path: Path,
+    target_reference: str,
+    workspace: Path,
+) -> tuple[Path, Path]:
+    """Import Azure/AWS operational evidence and write correlated incident reports."""
+    base = load_bundle(base_bundle_path)
+    if provider == "azure":
+        imported = import_azure_vm_export(export_path, target_reference=target_reference)
+    elif provider == "aws":
+        imported = import_aws_ec2_export(export_path, target_reference=target_reference)
+    else:
+        raise ValueError("provider must be 'azure' or 'aws'")
+    bundle = base.model_copy(update={"evidence": [*base.evidence, *imported]})
+    analysis_as_of = max(item.collected_at for item in bundle.evidence)
+    analysis = analyze(bundle, generated_at=analysis_as_of)
+    workspace.mkdir(parents=True, exist_ok=True)
+    markdown_path = workspace / f"{analysis.incident.incident_id}-{provider}.md"
+    json_path = workspace / f"{analysis.incident.incident_id}-{provider}.json"
+    markdown_path.write_text(render_markdown(analysis), encoding="utf-8")
+    json_path.write_text(render_json(analysis), encoding="utf-8")
     return markdown_path, json_path
