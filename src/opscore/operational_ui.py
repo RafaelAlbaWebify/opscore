@@ -11,7 +11,9 @@ OPERATIONAL_STYLES = """
   justify-content: space-between;
   gap: 1rem;
 }
-.operations-actions { display: flex; gap: .5rem; }\n.operations-actions button { width: auto; margin: 0; }\n.operations-heading h2,
+.operations-actions { display: flex; gap: .5rem; }
+.operations-actions button { width: auto; margin: 0; }
+.operations-heading h2,
 .ops-intake h2 { margin-bottom: .25rem; }
 .operations-heading p,
 .ops-intake > p { margin: 0; }
@@ -122,7 +124,9 @@ OPERATIONAL_STYLES = """
   #incident-form-host form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 600px) {
-  .operations-heading { display: block; }\n  .operations-actions { margin-top: .75rem; }\n  .operations-actions button { width: 100%; }
+  .operations-heading { display: block; }
+  .operations-actions { margin-top: .75rem; }
+  .operations-actions button { width: 100%; }
   .operations-heading button { width: 100%; }
   .ops-metrics,
   #incident-form-host form { grid-template-columns: 1fr; }
@@ -253,6 +257,21 @@ OPERATIONAL_SCRIPT = """
     .addEventListener("input", renderRegister);
   document.getElementById("refresh-overview")
     .addEventListener("click", refreshOperationalOverview);
+  document.getElementById("load-operations-demo")
+    .addEventListener("click", async () => {
+      const button = document.getElementById("load-operations-demo");
+      button.disabled = true;
+      button.textContent = "Loading demo…";
+      try {
+        const payload = await request("/api/demo/seed", {method: "POST"});
+        await refreshIncidents();
+        await loadIncident(payload.primary_incident_id);
+        document.getElementById("workspace").scrollIntoView({behavior: "smooth"});
+      } finally {
+        button.disabled = false;
+        button.textContent = "Load operations demo";
+      }
+    });
   refreshOperationalOverview().catch(() => {
     document.getElementById("incident-register-body").innerHTML =
       "<tr><td colspan='6' class='muted'>Overview could not be loaded.</td></tr>";
