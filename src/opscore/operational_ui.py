@@ -11,7 +11,7 @@ OPERATIONAL_STYLES = """
   justify-content: space-between;
   gap: 1rem;
 }
-.operations-heading h2,
+.operations-actions { display: flex; gap: .5rem; }\n.operations-actions button { width: auto; margin: 0; }\n.operations-heading h2,
 .ops-intake h2 { margin-bottom: .25rem; }
 .operations-heading p,
 .ops-intake > p { margin: 0; }
@@ -122,7 +122,7 @@ OPERATIONAL_STYLES = """
   #incident-form-host form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 600px) {
-  .operations-heading { display: block; }
+  .operations-heading { display: block; }\n  .operations-actions { margin-top: .75rem; }\n  .operations-actions button { width: 100%; }
   .operations-heading button { width: 100%; }
   .ops-metrics,
   #incident-form-host form { grid-template-columns: 1fr; }
@@ -140,7 +140,7 @@ OPERATIONAL_OVERVIEW = """
         Persisted incidents only. Metrics refresh from the local OPSCORE workspace.
       </p>
     </div>
-    <button id="refresh-overview" class="secondary">Refresh overview</button>
+    <div class="operations-actions"><button id="load-operations-demo" class="secondary">Load operations demo</button><button id="refresh-overview" class="secondary">Refresh overview</button></div>
   </div>
   <div class="ops-metrics" aria-label="Incident workload metrics">
     <article><span>Total incidents</span><strong id="metric-total">0</strong></article>
