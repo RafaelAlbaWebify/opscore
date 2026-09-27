@@ -90,10 +90,10 @@ def exercise_desktop(page: Page, base_url: str, screenshot: Path) -> None:
     page.locator("#evidence-panel summary").click()
     expect(page.locator("#evidence").get_by_text("cloud-vm-state")).to_be_visible()
     expect(page.locator("#evidence").get_by_text("azure-export")).to_be_visible()
-    expect(page.get_by_text("AZURE_NETWORK_REVIEW_REQUIRED")).to_be_visible()
-    expect(page.get_by_text("CONTRADICTORY_AVAILABILITY_EVIDENCE")).to_be_visible()
+    expect(page.locator("#findings").get_by_text("AZURE_NETWORK_REVIEW_REQUIRED")).to_be_visible()
+    expect(page.locator("#findings").get_by_text("CONTRADICTORY_AVAILABILITY_EVIDENCE")).to_be_visible()
     expect(
-        page.get_by_text("Network-path involvement is supported but not confirmed.")
+        page.locator("#assessment-preview").get_by_text("Network-path involvement is supported but not confirmed.")
     ).to_be_visible()
     record(screenshot, "desktop:operations-demo-opened")
 
