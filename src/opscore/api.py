@@ -19,6 +19,7 @@ from opscore.collectors import CollectorRequest, collect_target
 from opscore.connectivity import TcpConnectivityRequest, collect_tcp_connectivity
 from opscore.history import IncidentRevision, IncidentRevisionMetadata
 from opscore.models import EvidenceItem, Incident, IncidentAnalysis, IncidentBundle
+from opscore.portfolio_demo import seed_portfolio_demo
 from opscore.storage import IncidentStore
 from opscore.ui import render_operator_interface
 from opscore.watch_handoff import WatchHandoff, evidence_from_handoff
@@ -38,6 +39,12 @@ def create_app(workspace: Path | None = None) -> FastAPI:
     @application.get("/api/health")
     def health() -> dict[str, str]:
         return {"status": "ok", "service": "opscore", "version": __version__}
+
+    @application.post("/api/demo/seed")
+    def seed_operations_demo() -> dict[str, str]:
+        """Load the deterministic synthetic portfolio review case."""
+        incident_id = seed_portfolio_demo(store)
+        return {"primary_incident_id": incident_id}
 
     @application.get("/api/incidents", response_model=list[Incident])
     def list_incidents() -> list[Incident]:
