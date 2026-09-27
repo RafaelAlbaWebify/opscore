@@ -187,6 +187,7 @@ def test_openapi_incident_contract(tmp_path: Path) -> None:
     paths = create_app(tmp_path).openapi()["paths"]
     expected_methods = {
         "/api/health": {"get"},
+        "/api/demo/seed": {"post"},
         "/api/incidents": {"get", "post"},
         "/api/incidents/{incident_id}": {"get"},
         "/api/incidents/{incident_id}/history": {"get"},
@@ -204,3 +205,30 @@ def test_openapi_incident_contract(tmp_path: Path) -> None:
     assert set(paths) == set(expected_methods)
     for path, methods in expected_methods.items():
         assert set(paths[path]) == methods
+
+
+def test_portfolio_operations_demo_is_review_ready(tmp_path: Path) -> None:
+    client = TestClient(create_app(tmp_path))
+    seeded = client.post("/api/demo/seed")
+    assert seeded.status_code == 200
+    incident_id = seeded.json()["primary_incident_id"]
+    assert incident_id == "inc-portfolio-ops-001"
+
+    bundle = client.get(f"/api/incidents/{incident_id}").json()
+    assert bundle["incident"]["severity"] == "high"
+    assert bundle["incident"]["root_cause_status"] == "supported"
+    assert {item["source_system"] for item in bundle["evidence"]} >= {
+        "azure-export", "WATCH synthetic export"
+    }
+
+    analysis = client.get(f"/api/incidents/{incident_id}/analysis").json()
+    codes = {item["code"] for item in analysis["findings"]}
+    assert "DNS_OK_HTTP_UNAVAILABLE" in codes
+    assert "CONTRADICTORY_AVAILABILITY_EVIDENCE" in codes
+    assert "AZURE_NETWORK_REVIEW_REQUIRED" in codes
+    assert "REQUIRED_DEPENDENCY_EVIDENCE_MISSING" in codes
+
+    assessment = client.get(f"/api/incidents/{incident_id}/assessment").json()
+    assert assessment["root_cause"]["status"] == "supported"
+    assert assessment["hypotheses"][0]["status"] == "supported"
+    assert "not a live tenant query" in assessment["root_cause"]["limitations"][0]

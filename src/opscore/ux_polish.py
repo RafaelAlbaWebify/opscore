@@ -340,6 +340,10 @@ UX_SCRIPT = r"""
   const originalLoadIncident = loadIncident;
   loadIncident = async (id) => {
     setStatus("Loading incident workspace…");
+    reportPreview.hidden = false;
+    reportPreview.textContent = "Run analysis before loading a report.";
+    reportRendered.hidden = true;
+    reportRendered.innerHTML = "";
     try {
       await originalLoadIncident(id);
       replaceIsoDates(document.getElementById("workspace"));

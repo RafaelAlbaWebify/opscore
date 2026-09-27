@@ -74,6 +74,31 @@ def exercise_desktop(page: Page, base_url: str, screenshot: Path) -> None:
     expect(page.locator("#assessment-panel")).to_be_visible()
     record(screenshot, "desktop:report-rendered")
 
+    demo_url = f"{base_url}/api/demo/seed"
+    with page.expect_response(lambda response: response.url == demo_url) as demo_info:
+        page.get_by_role("button", name="Load operations demo").click()
+    assert demo_info.value.status == 200
+    page.get_by_role(
+        "heading", name="Orders portal unreachable from one location"
+    ).wait_for()
+    expect(page.locator("#report-preview")).to_contain_text(
+        "inc-portfolio-ops-001"
+    )
+    expect(page.locator("#report-preview")).not_to_contain_text(
+        "Browser verified incident"
+    )
+    page.locator("#evidence-panel summary").click()
+    expect(page.locator("#evidence").get_by_text("cloud-vm-state")).to_be_visible()
+    expect(page.locator("#evidence").get_by_text("azure-export")).to_be_visible()
+    expect(page.locator("#findings").get_by_text("AZURE_NETWORK_REVIEW_REQUIRED")).to_be_visible()
+    expect(page.locator("#findings").get_by_text("CONTRADICTORY_AVAILABILITY_EVIDENCE")).to_be_visible()
+    expect(
+        page.locator("#assessment-preview").get_by_text(
+            "Network-path involvement is supported but not confirmed."
+        )
+    ).to_be_visible()
+    record(screenshot, "desktop:operations-demo-opened")
+
     settle_visual_state(page, screenshot)
     record(screenshot, "desktop:settled")
     screenshot.parent.mkdir(parents=True, exist_ok=True)

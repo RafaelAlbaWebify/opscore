@@ -11,6 +11,8 @@ OPERATIONAL_STYLES = """
   justify-content: space-between;
   gap: 1rem;
 }
+.operations-actions { display: flex; gap: .5rem; }
+.operations-actions button { width: auto; margin: 0; }
 .operations-heading h2,
 .ops-intake h2 { margin-bottom: .25rem; }
 .operations-heading p,
@@ -123,6 +125,8 @@ OPERATIONAL_STYLES = """
 }
 @media (max-width: 600px) {
   .operations-heading { display: block; }
+  .operations-actions { margin-top: .75rem; }
+  .operations-actions button { width: 100%; }
   .operations-heading button { width: 100%; }
   .ops-metrics,
   #incident-form-host form { grid-template-columns: 1fr; }
@@ -140,7 +144,7 @@ OPERATIONAL_OVERVIEW = """
         Persisted incidents only. Metrics refresh from the local OPSCORE workspace.
       </p>
     </div>
-    <button id="refresh-overview" class="secondary">Refresh overview</button>
+    <div class="operations-actions"><button id="load-operations-demo" class="secondary">Load operations demo</button><button id="refresh-overview" class="secondary">Refresh overview</button></div>
   </div>
   <div class="ops-metrics" aria-label="Incident workload metrics">
     <article><span>Total incidents</span><strong id="metric-total">0</strong></article>
@@ -253,6 +257,25 @@ OPERATIONAL_SCRIPT = """
     .addEventListener("input", renderRegister);
   document.getElementById("refresh-overview")
     .addEventListener("click", refreshOperationalOverview);
+  document.getElementById("load-operations-demo")
+    .addEventListener("click", async () => {
+      const button = document.getElementById("load-operations-demo");
+      button.disabled = true;
+      button.textContent = "Loading demo…";
+      try {
+        const payload = await request("/api/demo/seed", {method: "POST"});
+        await refreshIncidents();
+        await loadIncident(payload.primary_incident_id);
+        const report = await request(
+          `/api/incidents/${payload.primary_incident_id}/report.md`
+        );
+        document.getElementById("report-preview").textContent = report;
+        document.getElementById("workspace").scrollIntoView({behavior: "smooth"});
+      } finally {
+        button.disabled = false;
+        button.textContent = "Load operations demo";
+      }
+    });
   refreshOperationalOverview().catch(() => {
     document.getElementById("incident-register-body").innerHTML =
       "<tr><td colspan='6' class='muted'>Overview could not be loaded.</td></tr>";

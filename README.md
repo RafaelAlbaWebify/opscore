@@ -121,6 +121,21 @@ The local browser workbench includes:
 - synchronized operator assessment;
 - desktop and narrow-screen layouts.
 
+## Portfolio review path
+
+For the fastest reviewer path, start the local workbench and select **Load operations demo**.
+The deterministic synthetic case opens a production-like service reachability investigation with:
+
+- a web service and required identity/database dependencies;
+- DNS success with contradictory HTTP availability by source location;
+- an imported synthetic Azure VM snapshot reporting failed network reachability;
+- deterministic findings, missing-evidence guidance and safe next checks;
+- an explicit operator hypothesis and root-cause assessment kept at **supported**, not confirmed;
+- a report and immutable local investigation history.
+
+The Azure evidence is an offline synthetic export. The demo does not connect to an Azure
+tenant, query live resources, provision infrastructure or perform remediation.
+
 ## Quick start on Windows
 
 From PowerShell in the repository root:
