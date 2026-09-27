@@ -82,9 +82,11 @@ def exercise_desktop(page: Page, base_url: str, screenshot: Path) -> None:
         "heading", name="Orders portal unreachable from one location"
     ).wait_for()
     expect(page.locator("#report-preview")).to_contain_text(
-        "Run analysis before loading a report."
+        "inc-portfolio-ops-001"
     )
-    expect(page.locator(".report-rendered")).to_be_hidden()
+    expect(page.locator("#report-preview")).not_to_contain_text(
+        "Browser verified incident"
+    )
     page.locator("#evidence-panel summary").click()
     expect(page.locator("#evidence").get_by_text("cloud-vm-state")).to_be_visible()
     expect(page.locator("#evidence").get_by_text("azure-export")).to_be_visible()
