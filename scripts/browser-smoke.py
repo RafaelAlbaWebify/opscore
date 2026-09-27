@@ -76,6 +76,7 @@ def exercise_desktop(page: Page, base_url: str, screenshot: Path) -> None:
 
     page.get_by_role("button", name="Load operations demo").click()
     page.get_by_role("heading", name="Orders portal unreachable from one location").wait_for()
+    page.locator("#evidence-panel summary").click()
     expect(page.get_by_text("cloud-vm-state")).to_be_visible()
     expect(page.get_by_text("azure-export")).to_be_visible()
     expect(page.get_by_text("AZURE_NETWORK_REVIEW_REQUIRED")).to_be_visible()
