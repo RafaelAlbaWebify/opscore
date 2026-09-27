@@ -266,6 +266,10 @@ OPERATIONAL_SCRIPT = """
         const payload = await request("/api/demo/seed", {method: "POST"});
         await refreshIncidents();
         await loadIncident(payload.primary_incident_id);
+        const report = await request(
+          `/api/incidents/${payload.primary_incident_id}/report.md`
+        );
+        document.getElementById("report-preview").textContent = report;
         document.getElementById("workspace").scrollIntoView({behavior: "smooth"});
       } finally {
         button.disabled = false;
