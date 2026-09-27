@@ -79,12 +79,12 @@ def exercise_desktop(page: Page, base_url: str, screenshot: Path) -> None:
         page.get_by_role("button", name="Load operations demo").click()
     assert demo_info.value.status == 200
     page.get_by_role(
-        "button", name="Open", exact=True
-    ).last.wait_for()
-    page.locator("button.register-open[data-id='inc-portfolio-ops-001']").click()
-    page.get_by_role(
         "heading", name="Orders portal unreachable from one location"
     ).wait_for()
+    expect(page.locator("#report-preview")).to_contain_text(
+        "Run analysis before loading a report."
+    )
+    expect(page.locator(".report-rendered")).to_be_hidden()
     page.locator("#evidence-panel summary").click()
     expect(page.locator("#evidence").get_by_text("cloud-vm-state")).to_be_visible()
     expect(page.locator("#evidence").get_by_text("azure-export")).to_be_visible()
