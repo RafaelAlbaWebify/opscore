@@ -74,8 +74,17 @@ def exercise_desktop(page: Page, base_url: str, screenshot: Path) -> None:
     expect(page.locator("#assessment-panel")).to_be_visible()
     record(screenshot, "desktop:report-rendered")
 
-    page.get_by_role("button", name="Load operations demo").click()
-    page.get_by_role("heading", name="Orders portal unreachable from one location").wait_for()
+    demo_url = f"{base_url}/api/demo/seed"
+    with page.expect_response(lambda response: response.url == demo_url) as demo_info:
+        page.get_by_role("button", name="Load operations demo").click()
+    assert demo_info.value.status == 200
+    page.get_by_role(
+        "button", name="Open", exact=True
+    ).last.wait_for()
+    page.locator("button.register-open[data-id='inc-portfolio-ops-001']").click()
+    page.get_by_role(
+        "heading", name="Orders portal unreachable from one location"
+    ).wait_for()
     page.locator("#evidence-panel summary").click()
     expect(page.get_by_text("cloud-vm-state")).to_be_visible()
     expect(page.get_by_text("azure-export")).to_be_visible()
