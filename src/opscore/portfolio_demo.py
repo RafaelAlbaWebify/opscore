@@ -47,11 +47,11 @@ def build_portfolio_demo() -> IncidentBundle:
         root_cause_status=RootCauseStatus.SUPPORTED,
     )
     services = [
-        Service(service_id="orders-web", name="Orders Web", environment="production-like demo",
+        Service(\n            service_id="orders-web", name="Orders Web", environment="production-like demo",
                 service_type="web", owner="Application Operations", criticality=IncidentSeverity.HIGH),
-        Service(service_id="identity", name="Identity Service", environment="production-like demo",
+        Service(\n            service_id="identity", name="Identity Service", environment="production-like demo",
                 service_type="identity", owner="Identity Operations", criticality=IncidentSeverity.HIGH),
-        Service(service_id="orders-db", name="Orders Database", environment="production-like demo",
+        Service(\n            service_id="orders-db", name="Orders Database", environment="production-like demo",
                 service_type="database", owner="Database Operations", criticality=IncidentSeverity.HIGH),
     ]
     dependencies = [
@@ -63,22 +63,22 @@ def build_portfolio_demo() -> IncidentBundle:
                    evidence_source="synthetic service map", confidence=Confidence.HIGH),
     ]
     evidence = [
-        EvidenceItem(evidence_id="ev-demo-dns", evidence_type="dns-resolution",
+        EvidenceItem(\n            evidence_id="ev-demo-dns", evidence_type="dns-resolution",
                      source_system="WATCH synthetic export", collected_at=_dt("2026-09-26T09:01:00Z"),
                      target_reference="orders-web",
                      normalized_data={"hostname": "orders.example.test", "resolved_ips": ["203.0.113.10"]},
                      limitations=["Documentation-only address."]),
-        EvidenceItem(evidence_id="ev-demo-http-fail", evidence_type="http-response",
+        EvidenceItem(\n            evidence_id="ev-demo-http-fail", evidence_type="http-response",
                      source_system="WATCH synthetic export", collected_at=_dt("2026-09-26T09:01:05Z"),
                      target_reference="orders-web",
                      normalized_data={"status": None, "error": "connection timeout",
                                       "source_location": "site-a"}),
-        EvidenceItem(evidence_id="ev-demo-http-ok", evidence_type="http-response",
+        EvidenceItem(\n            evidence_id="ev-demo-http-ok", evidence_type="http-response",
                      source_system="operator synthetic evidence", collected_at=_dt("2026-09-26T09:02:00Z"),
                      target_reference="orders-web",
                      normalized_data={"status": 200, "response_ms": 228,
                                       "source_location": "site-b"}),
-        EvidenceItem(evidence_id="ev-demo-azure", evidence_type="cloud-vm-state",
+        EvidenceItem(\n            evidence_id="ev-demo-azure", evidence_type="cloud-vm-state",
                      source_system="azure-export", collected_at=_dt("2026-09-26T09:03:00Z"),
                      target_reference="orders-web",
                      normalized_data={"provider": "azure", "resource_name": "az-orders-01",
@@ -88,12 +88,12 @@ def build_portfolio_demo() -> IncidentBundle:
                      raw_reference="synthetic-azure-vm-export.json",
                      limitations=["Imported synthetic export only; no live Azure tenant connection.",
                                   "Reachability evidence does not identify the failing network control."]),
-        EvidenceItem(evidence_id="ev-demo-tls", evidence_type="tls-certificate",
+        EvidenceItem(\n            evidence_id="ev-demo-tls", evidence_type="tls-certificate",
                      source_system="WATCH synthetic export", collected_at=_dt("2026-09-26T09:04:00Z"),
                      target_reference="orders-web",
                      normalized_data={"days_remaining": 21, "hostname_match": True}),
     ]
-    return IncidentBundle(incident=incident, services=services, dependencies=dependencies, evidence=evidence)
+    return IncidentBundle(\n        incident=incident,\n        services=services,\n        dependencies=dependencies,\n        evidence=evidence,\n    )
 
 
 def seed_portfolio_demo(store: IncidentStore) -> str:
