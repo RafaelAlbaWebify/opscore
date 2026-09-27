@@ -187,6 +187,7 @@ def test_openapi_incident_contract(tmp_path: Path) -> None:
     paths = create_app(tmp_path).openapi()["paths"]
     expected_methods = {
         "/api/health": {"get"},
+        "/api/demo/seed": {"post"},
         "/api/incidents": {"get", "post"},
         "/api/incidents/{incident_id}": {"get"},
         "/api/incidents/{incident_id}/history": {"get"},
@@ -230,4 +231,4 @@ def test_portfolio_operations_demo_is_review_ready(tmp_path: Path) -> None:
     assessment = client.get(f"/api/incidents/{incident_id}/assessment").json()
     assert assessment["root_cause"]["status"] == "supported"
     assert assessment["hypotheses"][0]["status"] == "supported"
-    assert "no live Azure tenant connection" in assessment["root_cause"]["limitations"][0]
+    assert "not a live tenant query" in assessment["root_cause"]["limitations"][0]
