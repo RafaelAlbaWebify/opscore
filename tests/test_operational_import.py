@@ -96,6 +96,7 @@ def test_original_custosops_samples() -> None:
         evidence = normalize_import(OperationalImport.model_validate({
             "kind": kind, "target_reference": "orders-web",
             "collected_at": "2026-07-14T08:10:00Z", "content": content,
+            "input_format": "text" if filename.endswith(".log") else "json",
         }))
         counts = evidence.normalized_data["signal_counts"]
         assert all(counts.get(code) == count for code, count in expected.items())

@@ -44,6 +44,7 @@ def add_operational_import_ui(html: str) -> str:
             target_reference: field("operational-target").value,
             collected_at: field("operational-time").value,
             content: await file.text(),
+            input_format: /\\.(log|txt)$/i.test(file.name) ? "text" : "json",
           };
           await request(
             "/api/incidents/" + encodeURIComponent(incident) + "/operational-import",

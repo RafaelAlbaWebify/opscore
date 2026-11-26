@@ -34,3 +34,5 @@ Run 45879980518: Windows passed; Linux lint, type checking, tests, demo and impo
 ## Source-format compatibility increment
 
 Support CustosOps original synthetic FastAPI text log, native PowerShell JSON event keys (Id, ProviderName, LogName), records arrays, and evidence envelopes. Add 404, slow request (2000 ms provisional threshold), possible sensitive markers and Windows Update signals. Text HTTP parsing is intentionally limited to quoted HTTP request lines; no arbitrary log format coverage, CSV or EVTX claim. Original synthetic source fixtures are retained under samples/imports/custosops, with the source MIT notice already included. These tests establish selected signal compatibility, not full equivalence or measured productivity.
+
+Text input requires explicit `input_format: "text"` (the UI selects it for .log/.txt). JSON remains the default; malformed JSON must not silently fall back to text. NUL-containing text is rejected. This preserves the previous invalid-input privacy contract.

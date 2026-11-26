@@ -22,6 +22,7 @@ class OperationalImport(BaseModel):
     target_reference: str = Field(min_length=1)
     collected_at: datetime
     content: str = Field(repr=False)
+    input_format: Literal["json", "text"] = "json"
 
 
 LABELS = {
@@ -148,8 +149,10 @@ def normalize_import(request: OperationalImport) -> EvidenceItem:
         data = request.content.encode("utf-8")
         if not data or len(data) > MAX_IMPORT_BYTES:
             raise ValueError("Import must contain at most 2 MiB")
-        if request.kind == "application-log" and not request.content.lstrip().startswith(("{", "[")):
-            if "\\x00" in request.content or not request.content.strip():
+        if request.input_format == "text":
+            if request.kind != "application-log":
+                raise ValueError("Text input is supported only for application logs")
+            if "\x00" in request.content or not request.content.strip():
                 raise ValueError("Invalid text log")
             payload = _text_log_records(request.content)
         else:
