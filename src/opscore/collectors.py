@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ipaddress
 import socket
 import ssl
 from datetime import UTC, datetime
@@ -22,6 +23,7 @@ class CollectorRequest(BaseModel):
     url: str = Field(min_length=1)
     target_reference: str = Field(min_length=1)
     source_location: str = Field(min_length=1)
+    public_only: bool = False
     timeout_seconds: float = Field(default=5.0, ge=0.5, le=10.0)
 
     @model_validator(mode="after")
@@ -33,6 +35,8 @@ class CollectorRequest(BaseModel):
             raise ValueError("collector URL must include a hostname")
         if parsed.username or parsed.password:
             raise ValueError("collector URL must not include credentials")
+        if parsed.query:
+            raise ValueError("collector URL must not include query parameters")
         if parsed.fragment:
             raise ValueError("collector URL must not include a fragment")
         try:
@@ -71,7 +75,7 @@ def _dns_evidence(request: CollectorRequest, collected_at: datetime) -> Evidence
         status = "completed"
         limitations: list[str] = []
     except OSError as exc:
-        data.update({"hostname": hostname, "resolved_ips": [], "error": str(exc)})
+        data.update({"hostname": hostname, "resolved_ips": [], "error": type(exc).__name__})
         status = "partial"
         limitations = ["DNS resolution failed from the recorded source location."]
     return EvidenceItem(
@@ -86,30 +90,40 @@ def _dns_evidence(request: CollectorRequest, collected_at: datetime) -> Evidence
     )
 
 
-def _http_evidence(request: CollectorRequest, collected_at: datetime) -> EvidenceItem:
+def _http_evidence(
+    request: CollectorRequest, collected_at: datetime, address: str | None
+) -> EvidenceItem:
     data = _base_data(request)
     started = perf_counter()
     try:
-        with httpx.stream(
+        if address is None:
+            raise ValueError("No approved resolved address")
+        logical = httpx.URL(request.url)
+        host = logical.host
+        host_header = f"[{host}]" if ":" in host else host
+        if logical.port is not None:
+            host_header = f"{host_header}:{logical.port}"
+        data["connected_address"] = address
+        with httpx.Client(trust_env=False, follow_redirects=False) as client, client.stream(
             "GET",
-            request.url,
+            logical.copy_with(host=address),
             timeout=request.timeout_seconds,
             follow_redirects=False,
-            headers={"User-Agent": "OPSCORE/0.4 bounded collector"},
+            headers={"User-Agent": "OPSCORE bounded collector", "Host": host_header},
+            extensions={"sni_hostname": host},
         ) as response:
             elapsed_ms = round((perf_counter() - started) * 1000, 2)
             data.update(
                 {
                     "status": response.status_code,
                     "elapsed_ms": elapsed_ms,
-                    "location": response.headers.get("location"),
-                    "server": response.headers.get("server"),
+                    "redirect_present": "location" in response.headers,
                 }
             )
         status = "completed"
         limitations = ["Response body was intentionally not downloaded."]
-    except httpx.HTTPError as exc:
-        data.update({"status": None, "error": str(exc)})
+    except (httpx.HTTPError, ValueError) as exc:
+        data.update({"status": None, "error": type(exc).__name__})
         status = "partial"
         limitations = ["HTTP reachability failed within the configured timeout."]
     return EvidenceItem(
@@ -124,7 +138,9 @@ def _http_evidence(request: CollectorRequest, collected_at: datetime) -> Evidenc
     )
 
 
-def _tls_evidence(request: CollectorRequest, collected_at: datetime) -> EvidenceItem:
+def _tls_evidence(
+    request: CollectorRequest, collected_at: datetime, address: str | None
+) -> EvidenceItem:
     parsed = urlsplit(request.url)
     hostname = parsed.hostname
     assert hostname is not None
@@ -132,8 +148,11 @@ def _tls_evidence(request: CollectorRequest, collected_at: datetime) -> Evidence
     data = _base_data(request)
     data.update({"hostname": hostname, "port": port})
     try:
+        if address is None:
+            raise ValueError("No approved resolved address")
+        data["connected_address"] = address
         context = ssl.create_default_context()
-        with socket.create_connection((hostname, port), timeout=request.timeout_seconds) as raw:
+        with socket.create_connection((address, port), timeout=request.timeout_seconds) as raw:
             with context.wrap_socket(raw, server_hostname=hostname) as secured:
                 certificate = cast(dict[str, Any], secured.getpeercert() or {})
         expires_raw = certificate.get("notAfter")
@@ -162,7 +181,7 @@ def _tls_evidence(request: CollectorRequest, collected_at: datetime) -> Evidence
         status = "completed"
         limitations: list[str] = []
     except (OSError, ssl.SSLError, ValueError) as exc:
-        data.update({"error": str(exc)})
+        data.update({"error": type(exc).__name__})
         status = "partial"
         limitations = ["TLS evidence could not be collected within the configured boundary."]
     return EvidenceItem(
@@ -181,10 +200,19 @@ def collect_target(request: CollectorRequest) -> list[EvidenceItem]:
     """Collect DNS and HTTP evidence, plus TLS evidence for HTTPS targets."""
 
     collected_at = datetime.now(UTC)
-    evidence = [
-        _dns_evidence(request, collected_at),
-        _http_evidence(request, collected_at),
-    ]
+    dns = _dns_evidence(request, collected_at)
+    addresses = cast(list[str], dns.normalized_data["resolved_ips"])
+    approved = bool(addresses)
+    if request.public_only:
+        approved = approved and all(
+            ipaddress.ip_address(value).is_global
+            and not ipaddress.ip_address(value).is_multicast
+            for value in addresses
+        )
+    address = addresses[0] if approved else None
+    if addresses and not approved:
+        dns.limitations.append("Public-only policy rejected resolved addresses.")
+    evidence = [dns, _http_evidence(request, collected_at, address)]
     if urlsplit(request.url).scheme == "https":
-        evidence.append(_tls_evidence(request, collected_at))
+        evidence.append(_tls_evidence(request, collected_at, address))
     return evidence

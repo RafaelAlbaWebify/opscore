@@ -14,3 +14,7 @@ The five-minute window is a provisional engineering assumption, not a measured i
 Acceptance: full existing CI plus new regression tests. No merge or repository deletion until acceptance and review. No live networking changes, no new dependencies.
 
 Next: assess WATCH collector safety without enabling redirects, log sanitization licensing, and offline Windows event/log adapters. Do not copy INFIOS code before license clarification.
+
+## P0-B collector adaptation
+
+Pin HTTP and TLS to the first resolved address, preserve Host and SNI, disable ambient proxies, keep redirects disabled and avoid reading bodies. Public-only is opt-in; internal explicitly authorized targets remain supported. Query URLs are rejected to reduce accidental secret persistence. Error classes replace raw exception strings. DNS resolution still uses the OS resolver and is not governed by the socket timeout; this is not a hard total deadline. The first address may not represent all instances. Public-only is not a substitute for authorization or network isolation. Adapted from WATCH (MIT, Rafael Alba, source commit 1ba2e2ebe4dc0f82298e475c8c412d97f0660e01); OPSCORE retains its MIT notice.

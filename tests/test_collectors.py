@@ -42,7 +42,7 @@ def test_http_target_collects_failure_evidence(
         raise httpx.ConnectError("synthetic HTTP failure", request=request)
 
     monkeypatch.setattr(socket, "getaddrinfo", fail_dns)
-    monkeypatch.setattr(httpx, "stream", fail_http)
+    monkeypatch.setattr(httpx.Client, "stream", fail_http)
 
     evidence = collect_target(
         CollectorRequest(
@@ -80,7 +80,7 @@ def test_https_target_adds_tls_failure_evidence(
         raise TimeoutError("synthetic TLS timeout")
 
     monkeypatch.setattr(socket, "getaddrinfo", synthetic_dns)
-    monkeypatch.setattr(httpx, "stream", fail_http)
+    monkeypatch.setattr(httpx.Client, "stream", fail_http)
     monkeypatch.setattr(socket, "create_connection", fail_tls)
 
     evidence = collect_target(
@@ -99,7 +99,7 @@ def test_https_target_adds_tls_failure_evidence(
     ]
     assert evidence[0].normalized_data["resolved_ips"] == ["192.0.2.10"]
     assert evidence[2].collection_status == "partial"
-    assert "synthetic TLS timeout" in evidence[2].normalized_data["error"]
+    assert evidence[2].normalized_data["error"] == "TimeoutError"
 
 
 def test_collect_cli_writes_json(
@@ -139,3 +139,44 @@ def test_collect_cli_writes_json(
     assert output.exists()
     payload = json.loads(output.read_text(encoding="utf-8"))
     assert payload[0]["evidence_type"] == "dns-resolution"
+
+
+def test_public_policy_blocks_private_address(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        socket, "getaddrinfo",
+        lambda *a, **k: [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("10.0.0.1", 0))],
+    )
+    def unexpected(*args: object, **kwargs: object) -> object:
+        raise AssertionError("network connection must not occur")
+    monkeypatch.setattr(httpx.Client, "stream", unexpected)
+    monkeypatch.setattr(socket, "create_connection", unexpected)
+    result = collect_target(CollectorRequest(
+        url="https://example.test", target_reference="service",
+        source_location="test", public_only=True,
+    ))
+    assert result[1].collection_status == "partial"
+    assert result[2].collection_status == "partial"
+
+
+def test_pinned_http_preserves_hostname(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        socket, "getaddrinfo",
+        lambda *a, **k: [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("10.0.0.1", 0))],
+    )
+    original = httpx.Client
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.host == "10.0.0.1"
+        assert request.headers["host"] == "example.test:8080"
+        assert request.extensions["sni_hostname"] == "example.test"
+        return httpx.Response(302, headers={"location": "http://other.test"})
+    def client_factory(**kwargs: object) -> httpx.Client:
+        assert kwargs["trust_env"] is False
+        assert kwargs["follow_redirects"] is False
+        return original(transport=httpx.MockTransport(handler), trust_env=False)
+    monkeypatch.setattr(httpx, "Client", client_factory)
+    result = collect_target(CollectorRequest(
+        url="http://example.test:8080", target_reference="service",
+        source_location="test",
+    ))
+    assert result[1].normalized_data["status"] == 302
+    assert result[1].normalized_data["redirect_present"] is True
