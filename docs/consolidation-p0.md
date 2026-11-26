@@ -26,3 +26,7 @@ POST /api/incidents/{incident_id}/operational-import accepts kind (application-l
 ## P0-D first UI increment
 
 The workbench exposes an explicit JSON file import form for the active incident. The operator supplies the service identifier and UTC collection time. Validation errors for this endpoint use a generic message to avoid returning raw request data. The full existing browser suite and dedicated import workflow still require verification; no production acceptance or merge is implied.
+
+## Browser regression correction
+
+Run 45879980518: Windows passed; Linux lint, type checking, tests, demo and import correlation passed. Browser proof failed because the substring label "Service ID" matched both the original and new import controls. Use exact label matching and extend the real browser proof with a synthetic application-log upload, privacy check and analysis assertions. The new run must pass before acceptance.
