@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 
 from opscore.api import create_app
 from opscore.demo import load_bundle
+from opscore.operational_import import OperationalImport, normalize_import
 
 SAMPLE = Path("samples/incidents/orders-service-unavailable.json")
 
@@ -76,3 +77,42 @@ def test_operator_import_controls_present(tmp_path: Path) -> None:
     assert response.status_code == 200
     assert "operational-import-form" in response.text
     assert "operational-file" in response.text
+
+
+def test_original_custosops_samples() -> None:
+    for kind, filename, expected in [
+        ("application-log", "fastapi-api-errors.log", {
+            "APP_HTTP_5XX": 1, "APP_AUTH_FAILURE": 2, "APP_DNS": 1,
+            "APP_TLS": 1, "APP_DATABASE": 1, "APP_NOT_FOUND": 2,
+            "APP_SLOW_REQUEST": 1, "APP_SENSITIVE_INDICATOR": 2,
+        }),
+        ("windows-event", "sample-windows-events.json", {
+            "WIN_SERVICE_FAILURE": 1, "WIN_FAILED_LOGON": 1,
+            "WIN_APPLICATION_ERROR": 1, "WIN_DNS_ERROR": 1,
+            "WIN_REBOOT": 1, "WIN_UPDATE": 1,
+        }),
+    ]:
+        content = (Path("samples/imports/custosops") / filename).read_text(encoding="utf-8")
+        evidence = normalize_import(OperationalImport.model_validate({
+            "kind": kind, "target_reference": "orders-web",
+            "collected_at": "2026-07-14T08:10:00Z", "content": content,
+        }))
+        counts = evidence.normalized_data["signal_counts"]
+        assert all(counts.get(code) == count for code, count in expected.items())
+        assert "SYNTHETIC_REDACTED_VALUE" not in evidence.model_dump_json()
+        assert "LAB-WIN11-01" not in evidence.model_dump_json()
+
+
+def test_iis_evidence_envelope() -> None:
+    evidence = normalize_import(OperationalImport.model_validate({
+        "kind": "iis", "target_reference": "orders-web",
+        "collected_at": "2026-07-14T08:10:00Z",
+        "content": json.dumps({"evidence": {
+            "services": [{"name": "W3SVC", "status": "Stopped"}],
+            "sites": [{"state": "Stopped"}],
+            "application_pools": [{"state": "Stopped"}],
+        }}),
+    }))
+    assert evidence.normalized_data["signal_counts"] == {
+        "IIS_SERVICE_STOPPED": 1, "IIS_SITE_STOPPED": 1, "IIS_POOL_STOPPED": 1,
+    }

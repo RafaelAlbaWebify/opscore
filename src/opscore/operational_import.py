@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from collections import Counter
 from datetime import datetime
 from typing import Any, Literal
@@ -31,11 +32,15 @@ LABELS = {
     "APP_TLS": "TLS certificate or handshake error signals",
     "APP_DATABASE": "Database dependency error signals",
     "APP_EXCEPTION": "Exception signals",
+    "APP_NOT_FOUND": "HTTP 404 responses",
+    "APP_SLOW_REQUEST": "Requests at or above 2000 ms",
+    "APP_SENSITIVE_INDICATOR": "Possible sensitive data indicators",
     "WIN_SERVICE_FAILURE": "Service Control Manager failure events",
     "WIN_FAILED_LOGON": "Security failed logon events",
     "WIN_APPLICATION_ERROR": "Application error events",
     "WIN_DNS_ERROR": "DNS Client error events",
     "WIN_REBOOT": "System restart or shutdown events",
+    "WIN_UPDATE": "Windows Update events",
     "IIS_SERVICE_STOPPED": "Stopped IIS service observations",
     "IIS_SITE_STOPPED": "Stopped IIS site observations",
     "IIS_POOL_STOPPED": "Stopped IIS application pool observations",
@@ -62,12 +67,19 @@ def _app(record: dict[str, Any]) -> list[str]:
         codes.append("APP_HTTP_5XX")
     if type(status) is int and status in (401, 403):
         codes.append("APP_AUTH_FAILURE")
+    if type(status) is int and status == 404:
+        codes.append("APP_NOT_FOUND")
+    latency = record.get("latency_ms")
+    if type(latency) in (int, float) and latency >= 2000:
+        codes.append("APP_SLOW_REQUEST")
     message = _text(record, "raw") + " " + _text(record, "message")
+    if re.search(r"authorization\s*:|\b(?:password|pwd|token|api[_-]?key|secret)\s*[=:]", message):
+        codes.append("APP_SENSITIVE_INDICATOR")
     patterns = {
         "APP_TIMEOUT": ("timed out", "timeout", "deadline exceeded"),
-        "APP_DNS": ("name resolution failed", "dns resolution failed", "nxdomain"),
+        "APP_DNS": ("name resolution failed", "dns resolution failed", "nxdomain", "name or service not known"),
         "APP_TLS": ("certificate verify failed", "tls handshake failed", "certificate expired"),
-        "APP_DATABASE": ("database connection failed", "sql connection failed", "deadlock"),
+        "APP_DATABASE": ("database connection failed", "sql connection failed", "deadlock", "could not connect to database", "sql connection pool exhausted"),
         "APP_EXCEPTION": ("traceback", "unhandled exception"),
     }
     for code, terms in patterns.items():
@@ -77,11 +89,11 @@ def _app(record: dict[str, Any]) -> list[str]:
 
 
 def _windows(record: dict[str, Any]) -> list[str]:
-    event_id = record.get("event_id")
+    event_id = record.get("event_id", record.get("Id"))
     if type(event_id) is not int:
         return []
-    provider = _text(record, "provider")
-    channel = _text(record, "log_name")
+    provider = _text(record, "provider") or _text(record, "ProviderName")
+    channel = _text(record, "log_name") or _text(record, "LogName")
     if provider == "service control manager" and event_id in {
         7000, 7009, 7011, 7022, 7023, 7024, 7026, 7031, 7034, 7043
     }:
@@ -101,7 +113,34 @@ def _windows(record: dict[str, Any]) -> list[str]:
         "microsoft-windows-kernel-general"
     }:
         return ["WIN_REBOOT"]
+    if event_id in {19, 20, 21} and "windowsupdateclient" in provider:
+        return ["WIN_UPDATE"]
     return []
+
+
+def _text_log_records(content: str) -> list[dict[str, Any]]:
+    lines = content.splitlines()
+    if len(lines) > MAX_RECORDS:
+        raise ValueError("Too many log lines")
+    records: list[dict[str, Any]] = []
+    for line in lines:
+        record: dict[str, Any] = {"raw": line}
+        http = re.search(
+            r'"(?:GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s+[^"\r\n]+'
+            r'\s+HTTP/[0-9.]+"\s+(\d{3})\b', line, re.IGNORECASE
+        )
+        if http:
+            record["status_code"] = int(http.group(1))
+        latency = re.search(
+            r"\b(?:latency|duration|elapsed|took)[=: ]+(\d+(?:\.\d+)?)\s*(ms|s)\b",
+            line, re.IGNORECASE
+        )
+        if latency:
+            record["latency_ms"] = float(latency.group(1)) * (
+                1000 if latency.group(2).lower() == "s" else 1
+            )
+        records.append(record)
+    return records
 
 
 def normalize_import(request: OperationalImport) -> EvidenceItem:
@@ -109,13 +148,20 @@ def normalize_import(request: OperationalImport) -> EvidenceItem:
         data = request.content.encode("utf-8")
         if not data or len(data) > MAX_IMPORT_BYTES:
             raise ValueError("Import must contain at most 2 MiB")
-        payload = json.loads(data)
+        if request.kind == "application-log" and not request.content.lstrip().startswith(("{", "[")):
+            if "\\x00" in request.content or not request.content.strip():
+                raise ValueError("Invalid text log")
+            payload = _text_log_records(request.content)
+        else:
+            payload = json.loads(data)
     except (UnicodeError, json.JSONDecodeError, RecursionError):
         raise ValueError("Invalid JSON import") from None
     counts: Counter[str] = Counter()
     positions: dict[str, list[int]] = {}
     total = 0
     groups: list[tuple[str, list[dict[str, Any]]]] = []
+    if isinstance(payload, dict) and isinstance(payload.get("evidence"), dict):
+        payload = payload["evidence"]
     if request.kind == "iis":
         if not isinstance(payload, dict):
             raise ValueError("Expected an IIS JSON object")
@@ -124,7 +170,7 @@ def normalize_import(request: OperationalImport) -> EvidenceItem:
     else:
         if isinstance(payload, dict):
             key = "entries" if request.kind == "application-log" else "events"
-            payload = payload.get(key)
+            payload = payload.get(key, payload.get("records") if request.kind == "windows-event" else None)
         groups.append((request.kind, _records(payload)))
     for group, records in groups:
         total += len(records)

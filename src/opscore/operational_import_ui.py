@@ -12,7 +12,7 @@ def add_operational_import_ui(html: str) -> str:
       card.className = "card wide";
       card.id = "operational-import-panel";
       card.innerHTML = '<h3>Import operational evidence</h3>' +
-        '<p>JSON only. Selected diagnostic counts are retained, not raw records. ' +
+        '<p>JSON or application text logs. Selected diagnostic counts are retained, not raw records. ' +
         'Use authorized files and retain originals separately.</p>' +
         '<form id="operational-import-form">' +
         '<label>Evidence type <select id="operational-kind">' +
@@ -22,7 +22,7 @@ def add_operational_import_ui(html: str) -> str:
         '<label>Incident service ID <input id="operational-target" required></label>' +
         '<label>Collection time (UTC ISO 8601) ' +
         '<input id="operational-time" required placeholder="2026-07-14T08:10:00Z"></label>' +
-        '<label>JSON file <input id="operational-file" type="file" accept=".json" required>' +
+        '<label>Evidence file <input id="operational-file" type="file" accept=".json,.log,.txt" required>' +
         '</label><button type="submit">Import evidence</button></form>' +
         '<p id="operational-status" role="status" class="muted"></p>';
       grid.appendChild(card);
@@ -33,7 +33,7 @@ def add_operational_import_ui(html: str) -> str:
         const incident = selectedIncident;
         const file = field("operational-file").files[0];
         if (!incident || !file || file.size > 2097152) {
-          status.textContent = "Select an incident and a JSON file up to 2 MiB.";
+          status.textContent = "Select an incident and an evidence file up to 2 MiB.";
           return;
         }
         const button = event.currentTarget.querySelector("button");

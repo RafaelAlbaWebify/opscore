@@ -30,3 +30,7 @@ The workbench exposes an explicit JSON file import form for the active incident.
 ## Browser regression correction
 
 Run 45879980518: Windows passed; Linux lint, type checking, tests, demo and import correlation passed. Browser proof failed because the substring label "Service ID" matched both the original and new import controls. Use exact label matching and extend the real browser proof with a synthetic application-log upload, privacy check and analysis assertions. The new run must pass before acceptance.
+
+## Source-format compatibility increment
+
+Support CustosOps original synthetic FastAPI text log, native PowerShell JSON event keys (Id, ProviderName, LogName), records arrays, and evidence envelopes. Add 404, slow request (2000 ms provisional threshold), possible sensitive markers and Windows Update signals. Text HTTP parsing is intentionally limited to quoted HTTP request lines; no arbitrary log format coverage, CSV or EVTX claim. Original synthetic source fixtures are retained under samples/imports/custosops, with the source MIT notice already included. These tests establish selected signal compatibility, not full equivalence or measured productivity.
