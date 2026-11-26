@@ -198,6 +198,7 @@ def test_openapi_incident_contract(tmp_path: Path) -> None:
         "/api/incidents/{incident_id}/backup-awareness": {"post"},
         "/api/incidents/{incident_id}/watch-handoff": {"post"},
         "/api/incidents/{incident_id}/analyze": {"post"},
+        "/api/incidents/{incident_id}/operational-import": {"post"},
         "/api/incidents/{incident_id}/analysis": {"get"},
         "/api/incidents/{incident_id}/assessment": {"get", "put"},
         "/api/incidents/{incident_id}/report.md": {"get"},

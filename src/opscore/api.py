@@ -4,8 +4,10 @@ import os
 from datetime import UTC, datetime
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Response, status
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, HTTPException, Request, Response, status
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import HTMLResponse, JSONResponse
 
 from opscore import __version__
 from opscore.analysis import analyze
@@ -19,6 +21,8 @@ from opscore.collectors import CollectorRequest, collect_target
 from opscore.connectivity import TcpConnectivityRequest, collect_tcp_connectivity
 from opscore.history import IncidentRevision, IncidentRevisionMetadata
 from opscore.models import EvidenceItem, Incident, IncidentAnalysis, IncidentBundle
+from opscore.operational_import import OperationalImport, normalize_import
+from opscore.operational_import_ui import add_operational_import_ui
 from opscore.portfolio_demo import seed_portfolio_demo
 from opscore.storage import IncidentStore
 from opscore.ui import render_operator_interface
@@ -32,9 +36,15 @@ def create_app(workspace: Path | None = None) -> FastAPI:
     store = IncidentStore(resolved_workspace)
     application = FastAPI(title="OPSCORE API", version=__version__)
 
+    @application.exception_handler(RequestValidationError)
+    async def handle_validation(request: Request, exc: RequestValidationError) -> Response:
+        if request.url.path.endswith("/operational-import"):
+            return JSONResponse(status_code=422, content={"detail": "Invalid operational import"})
+        return await request_validation_exception_handler(request, exc)
+
     @application.get("/", response_class=HTMLResponse, include_in_schema=False)
     def operator_interface() -> str:
-        return enhance_operator_interface(render_operator_interface())
+        return add_operational_import_ui(enhance_operator_interface(render_operator_interface()))
 
     @application.get("/api/health")
     def health() -> dict[str, str]:
@@ -203,6 +213,29 @@ def create_app(workspace: Path | None = None) -> FastAPI:
         if any(item.evidence_id in existing_ids for item in imported):
             raise HTTPException(status_code=409, detail="WATCH run already imported")
         updated = bundle.model_copy(update={"evidence": [*bundle.evidence, *imported]})
+        store.save_bundle(updated)
+        return updated
+
+    @application.post(
+        "/api/incidents/{incident_id}/operational-import",
+        response_model=IncidentBundle,
+        status_code=status.HTTP_201_CREATED,
+    )
+    def import_operational_evidence(
+        incident_id: str, request: OperationalImport
+    ) -> IncidentBundle:
+        bundle = store.load_bundle(incident_id)
+        if bundle is None:
+            raise HTTPException(status_code=404, detail="incident not found")
+        if request.target_reference not in {service.service_id for service in bundle.services}:
+            raise HTTPException(status_code=422, detail="target is not an incident service")
+        try:
+            item = normalize_import(request)
+        except ValueError:
+            raise HTTPException(status_code=422, detail="Invalid operational import") from None
+        if any(existing.evidence_id == item.evidence_id for existing in bundle.evidence):
+            raise HTTPException(status_code=409, detail="Operational import already exists")
+        updated = bundle.model_copy(update={"evidence": [*bundle.evidence, item]})
         store.save_bundle(updated)
         return updated
 

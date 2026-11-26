@@ -41,7 +41,7 @@ def exercise_desktop(page: Page, base_url: str, screenshot: Path) -> None:
     page.get_by_label("Incident ID").fill("inc-browser-001")
     page.get_by_label("Title").fill("Browser verified incident")
     page.get_by_label("Symptom").fill("Synthetic operator interface verification.")
-    page.get_by_label("Service ID").fill("browser-service")
+    page.get_by_label("Service ID", exact=True).fill("browser-service")
     page.get_by_label("Service name").fill("Browser service")
     page.get_by_role("button", name="Create incident").click()
 
@@ -73,6 +73,32 @@ def exercise_desktop(page: Page, base_url: str, screenshot: Path) -> None:
     expect(page.locator("#report-preview")).to_be_hidden()
     expect(page.locator("#assessment-panel")).to_be_visible()
     record(screenshot, "desktop:report-rendered")
+
+    # Exercise the new import control through the real browser and API.
+    panel = page.locator("#operational-import-panel")
+    expect(panel).to_be_visible()
+    panel.locator("#operational-kind").select_option("application-log")
+    panel.locator("#operational-target").fill("browser-service")
+    panel.locator("#operational-time").fill("2026-07-14T08:10:00Z")
+    panel.locator("#operational-file").set_input_files({
+        "name": "synthetic-app-log.json",
+        "mimeType": "application/json",
+        "buffer": b'[{"status_code":503,"message":"timeout FAKE_BROWSER_SECRET"}]',
+    })
+    import_url = f"{base_url}/api/incidents/inc-browser-001/operational-import"
+    with page.expect_response(lambda response: response.url == import_url) as imported:
+        panel.get_by_role("button", name="Import evidence", exact=True).click()
+    assert imported.value.status == 201
+    assert "FAKE_BROWSER_SECRET" not in imported.value.text()
+    expect(panel.locator("#operational-status")).to_contain_text("Imported.")
+    expect(panel.get_by_role("button", name="Import evidence", exact=True)).to_be_enabled()
+    with page.expect_response(lambda response: response.url == analyze_url) as analyzed:
+        page.get_by_role("button", name="Run deterministic analysis").click()
+    assert analyzed.value.status == 200
+    codes = {finding["code"] for finding in analyzed.value.json()["findings"]}
+    assert {"APP_HTTP_5XX", "APP_TIMEOUT"} <= codes
+    expect(page.locator("#findings")).to_contain_text("APP_HTTP_5XX")
+    record(screenshot, "desktop:operational-import-verified")
 
     demo_url = f"{base_url}/api/demo/seed"
     with page.expect_response(lambda response: response.url == demo_url) as demo_info:

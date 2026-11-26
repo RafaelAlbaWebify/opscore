@@ -11,6 +11,7 @@ from opscore.models import (
     IncidentBundle,
     TimelineEvent,
 )
+from opscore.operational_import import operational_findings
 
 
 def _finding(
@@ -66,75 +67,91 @@ def _build_timeline(bundle: IncidentBundle) -> list[TimelineEvent]:
     return sorted(events, key=lambda event: (event.timestamp, event.event_id))
 
 
+def _nearby(left: EvidenceItem, right: EvidenceItem) -> bool:
+    return (
+        left.target_reference == right.target_reference
+        and abs((left.collected_at - right.collected_at).total_seconds()) <= 300
+    )
+
+
+def _same_collection_context(left: EvidenceItem, right: EvidenceItem) -> bool:
+    if not _nearby(left, right) or left.source_system != right.source_system:
+        return False
+    for key in ("source_location", "target_id", "requested_url"):
+        a = left.normalized_data.get(key)
+        b = right.normalized_data.get(key)
+        if a is not None and b is not None and a != b:
+            return False
+    if left.raw_reference and right.raw_reference:
+        return left.raw_reference == right.raw_reference
+    return True
+
+
 def _http_dns_findings(evidence: list[EvidenceItem]) -> list[Finding]:
-    dns_success = [
-        item
-        for item in evidence
+    dns = [
+        item for item in evidence
         if item.evidence_type == "dns-resolution"
         and item.normalized_data.get("resolved_ips")
     ]
-    http_fail = [
-        item
-        for item in evidence
-        if item.evidence_type == "http-response"
-        and (
-            item.normalized_data.get("status") is None
-            or item.normalized_data.get("error")
-        )
+    http = [item for item in evidence if item.evidence_type == "http-response"]
+    failures = [
+        item for item in http
+        if item.normalized_data.get("status") is None
+        and item.normalized_data.get("error")
     ]
-    http_success = [
-        item
-        for item in evidence
-        if item.evidence_type == "http-response"
-        and isinstance(item.normalized_data.get("status"), int)
-        and 200 <= item.normalized_data["status"] < 400
+    successes = [
+        item for item in http
+        if isinstance(item.normalized_data.get("status"), int)
+        and 200 <= item.normalized_data["status"] < 300
+    ]
+    server_errors = [
+        item for item in http
+        if isinstance(item.normalized_data.get("status"), int)
+        and 500 <= item.normalized_data["status"] <= 599
     ]
     findings: list[Finding] = []
-    if dns_success and http_fail:
-        findings.append(
-            _finding(
-                "DNS_OK_HTTP_UNAVAILABLE",
-                (
-                    "Name resolution completed, but application-layer "
-                    "reachability was not established."
-                ),
-                FindingSeverity.CRITICAL,
-                Confidence.HIGH,
-                [dns_success[0].evidence_id, http_fail[0].evidence_id],
-                missing=[
-                    "port/connectivity path",
-                    "server-side service state",
-                    "application logs",
-                ],
-                checks=[
-                    "Validate the configured service port from an approved source location.",
-                    "Review service and application logs for the evidence time window.",
-                ],
-                non_actions=["Do not modify DNS solely from this finding."],
+    for failure in failures:
+        matches = [item for item in dns if _same_collection_context(item, failure)]
+        if matches:
+            findings.append(
+                _finding(
+                    "DNS_OK_HTTP_UNAVAILABLE",
+                    "Name resolution completed, but HTTP reachability was not established.",
+                    FindingSeverity.CRITICAL,
+                    Confidence.MEDIUM,
+                    [matches[0].evidence_id, failure.evidence_id],
+                    missing=["verified endpoint and collection context", "server-side logs"],
+                    checks=["Compare source location, service port and collection time."],
+                    non_actions=["Do not modify DNS solely from this finding."],
+                )
             )
-        )
-    if http_success and http_fail:
+    for error in server_errors:
         findings.append(
             _finding(
-                "CONTRADICTORY_AVAILABILITY_EVIDENCE",
-                "Availability evidence is contradictory across collection results.",
+                "HTTP_SERVER_ERROR",
+                "An HTTP server error was observed; a response was received.",
                 FindingSeverity.WARNING,
                 Confidence.HIGH,
-                [http_success[0].evidence_id],
-                contradictory=[http_fail[0].evidence_id],
-                missing=[
-                    "source location",
-                    "resolved address per run",
-                    "target instance identity",
-                ],
-                checks=[
-                    (
-                        "Compare collection times, source locations, DNS answers "
-                        "and target instances."
-                    )
-                ],
+                [error.evidence_id],
+                checks=["Inspect application and upstream dependency logs."],
+                non_actions=["Do not infer a transport failure or confirmed root cause."],
             )
         )
+    for failure in [*failures, *server_errors]:
+        matches = [item for item in successes if _nearby(item, failure)]
+        if matches:
+            findings.append(
+                _finding(
+                    "CONTRADICTORY_AVAILABILITY_EVIDENCE",
+                    "Availability evidence differs across nearby collection results.",
+                    FindingSeverity.WARNING,
+                    Confidence.MEDIUM,
+                    [matches[0].evidence_id],
+                    contradictory=[failure.evidence_id],
+                    missing=["source location", "target instance identity"],
+                    checks=["Compare collection times, endpoints and source locations."],
+                )
+            )
     return findings
 
 
@@ -256,7 +273,7 @@ def _cloud_findings(evidence: list[EvidenceItem]) -> list[Finding]:
             findings.append(
                 _finding(
                     f"{provider}_HIGH_CPU",
-                    f"{provider} evidence reports sustained high CPU in the imported snapshot.",
+                    f"{provider} evidence reports high CPU in the imported snapshot.",
                     FindingSeverity.WARNING,
                     Confidence.MEDIUM,
                     [item.evidence_id],
@@ -324,6 +341,16 @@ def analyze(
     findings.extend(_tls_findings(bundle.evidence))
     findings.extend(_cloud_findings(bundle.evidence))
     findings.extend(_dependency_findings(bundle))
+    findings.extend(operational_findings(bundle.evidence))
+    # Preserve existing identifiers for unique codes; disambiguate repeated findings.
+    counts: dict[str, int] = {}
+    for finding in findings:
+        counts[finding.finding_id] = counts.get(finding.finding_id, 0) + 1
+    for finding in findings:
+        if counts[finding.finding_id] > 1:
+            suffix = "-".join(sorted(finding.supporting_evidence_ids))
+            if suffix:
+                finding.finding_id = f"{finding.finding_id}-{suffix}"
     return IncidentAnalysis(
         incident=bundle.incident,
         services=bundle.services,
