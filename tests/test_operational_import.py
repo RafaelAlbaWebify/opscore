@@ -59,3 +59,20 @@ def test_invalid_operational_import_does_not_echo_content(tmp_path: Path) -> Non
     })
     assert response.status_code == 422
     assert "FAKE_SECRET_INVALID_JSON" not in response.text
+
+
+def test_validation_error_does_not_echo_invalid_body(tmp_path: Path) -> None:
+    client = TestClient(create_app(tmp_path))
+    response = client.post("/api/incidents/inc-orders-001/operational-import", json={
+        "kind": "FAKE_SECRET_INVALID_KIND",
+        "content": "FAKE_SECRET_INVALID_BODY",
+    })
+    assert response.status_code == 422
+    assert "FAKE_SECRET" not in response.text
+
+
+def test_operator_import_controls_present(tmp_path: Path) -> None:
+    response = TestClient(create_app(tmp_path)).get("/")
+    assert response.status_code == 200
+    assert "operational-import-form" in response.text
+    assert "operational-file" in response.text

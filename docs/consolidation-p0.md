@@ -22,3 +22,7 @@ Pin HTTP and TLS to the first resolved address, preserve Host and SNI, disable a
 ## P0-C operational imports
 
 POST /api/incidents/{incident_id}/operational-import accepts kind (application-log, windows-event, iis), target_reference, timezone-aware collected_at and content (JSON string). Application records accept status_code, raw or message; Windows records accept event_id, provider and log_name; IIS accepts services (name/status), sites and application_pools (state). Only signal counts, up to ten record positions per signal, total count and source SHA256 persist. No raw messages, host/user names or filenames are retained by this adapter. This is structured JSON only, not a native EVTX or arbitrary plaintext parser. Invalid input is rejected; no signal is not evidence of health. The 2 MiB/10000-record limits apply after request decoding. Operators must retain originals separately and use sanitized service metadata. Rule subset adapted from CustosOps, MIT, commit a76c540de8e0dbac845d8b4b32dfb1a6824e82c2. Full original license notice retained in docs/licenses/CustosOps.txt. No INFIOS source copied.
+
+## P0-D first UI increment
+
+The workbench exposes an explicit JSON file import form for the active incident. The operator supplies the service identifier and UTC collection time. Validation errors for this endpoint use a generic message to avoid returning raw request data. The full existing browser suite and dedicated import workflow still require verification; no production acceptance or merge is implied.
