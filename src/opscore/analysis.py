@@ -11,6 +11,7 @@ from opscore.models import (
     IncidentBundle,
     TimelineEvent,
 )
+from opscore.operational_import import operational_findings
 
 
 def _finding(
@@ -340,6 +341,7 @@ def analyze(
     findings.extend(_tls_findings(bundle.evidence))
     findings.extend(_cloud_findings(bundle.evidence))
     findings.extend(_dependency_findings(bundle))
+    findings.extend(operational_findings(bundle.evidence))
     # Preserve existing identifiers for unique codes; disambiguate repeated findings.
     counts: dict[str, int] = {}
     for finding in findings:
